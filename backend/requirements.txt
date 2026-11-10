@@ -1,3 +1,10 @@
 fastapi==0.128.8
 uvicorn[standard]==0.39.0
 duckdb==1.4.5
+# Clustering. Lower bounds are the newest releases that still support Python 3.9;
+# one exact pin cannot cover both Python 3.9 and 3.14 wheels.
+numpy>=2.0.2
+pandas>=2.3.3
+scikit-learn>=1.6.1
+scipy>=1.13.1
+holidays>=0.83

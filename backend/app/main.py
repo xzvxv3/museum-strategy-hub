@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from .clustering.routes import add_clustering_routes
 from .database import DATA_DIR, DB_PATH, initialize, query
 from .strategies import build_strategy_analysis
 
@@ -25,8 +27,9 @@ def create_app(data_dir=DATA_DIR, db_path=DB_PATH):
     app.add_middleware(
         CORSMiddleware,
         allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173'],
-        allow_methods=['GET'], allow_headers=['*'],
+        allow_methods=['GET', 'POST'], allow_headers=['*'],
     )
+    add_clustering_routes(app, db_path, Path(db_path).parent / 'clustering')
 
     def run(sql, params=()):
         return query(db_path, sql, params)

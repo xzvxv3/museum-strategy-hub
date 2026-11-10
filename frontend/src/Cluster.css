@@ -1,0 +1,46 @@
+/* Cluster analysis tabs: only what the shared card / kpi / table classes do not cover. */
+.cluster-page{display:grid;gap:18px}
+.cluster-page>.kpis,.cluster-page>.two-col,.cluster-page>.info-banner,.cluster-page>.warning{margin:0}
+/* Grid items default to min-width:auto; wide tables must scroll inside their card, not widen the page. */
+.cluster-page>*,.cluster-page .two-col>*{min-width:0}
+.cluster-page .warning p{margin:6px 0 0;font-size:12px;line-height:1.7}
+.cluster-run-card .primary{margin-top:4px}
+.cluster-svg{width:100%;height:auto;display:block}
+.cluster-svg text{font-size:10px;fill:#657575}
+.cluster-svg .grid{stroke:#e2e9e2}
+.cluster-svg .zero{stroke:#9aa9a4}
+.cluster-svg .cursor{stroke:#8da592;stroke-dasharray:4 4}
+.cluster-svg .chart-hit:focus{outline:none}
+.cluster-svg.dendrogram text.leaf{font-size:12px}
+.cluster-svg.dendrogram text.leaf.highlighted{font-size:13.5px;font-weight:700}
+.cluster-svg.dendrogram .cut-label{fill:#b4656f;font-size:11px}
+.cluster-chart .chart-readout b{font-weight:600}
+.cluster-legend{flex-wrap:wrap;margin-top:10px}
+.cluster-legend i{display:inline-block;width:10px;height:10px;border-radius:3px}
+.cluster-legend i.dashed{background:repeating-linear-gradient(90deg,#64748b 0 4px,transparent 4px 7px)}
+.cluster-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.cluster-card{border-top:4px solid var(--cluster-color)}
+.cluster-card-top{display:flex;justify-content:space-between;font-size:11px;color:#657575}
+.cluster-card h3{margin:6px 0 8px;font-size:16px;color:#263536}
+.cluster-card p{font-size:11px;line-height:1.7;color:#4f6060;margin:2px 0}
+.stack-rows{display:grid;gap:7px}
+.stack-row{display:grid;grid-template-columns:minmax(110px,190px) 1fr;gap:10px;align-items:center;font-size:11px}
+.stack-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#4b5b5b}
+.stack-row.highlighted>span{font-weight:700;color:var(--primary)}
+.stack-row.dimmed .stack-strip{opacity:.5}
+.stack-strip{display:flex;height:14px;border-radius:4px;overflow:hidden;background:#edf2ef}
+.stack-strip i{display:block;height:100%}
+.stack-strip em{font-size:9px;color:#8a9a98;padding:0 6px;line-height:14px}
+.cluster-table{width:100%;border-collapse:collapse;font-size:11px}
+.cluster-table th,.cluster-table td{padding:7px 8px;text-align:left;border-bottom:1px solid #edf1e6;vertical-align:top}
+.cluster-table td:first-child{white-space:nowrap}
+.cluster-notes{margin:0;padding-left:18px;font-size:12px;line-height:1.9;color:#4b5b5b}
+.group-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+.group-chip{border:1px solid #e4eade;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.7;color:#4f6060}
+.group-chip b{display:flex;align-items:center;gap:6px;color:#263536}
+.dot{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:var(--dot)}
+.group-headline{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#263536;margin:4px 0 8px}
+.cluster-facts{margin:0;font-size:12px;line-height:1.9;color:#4f6060}
+.z-high{color:#1d5f9e;font-weight:700}
+.z-low{color:#b0483f;font-weight:700}
+@media(max-width:900px){.stack-row{grid-template-columns:90px 1fr}}

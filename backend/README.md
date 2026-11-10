@@ -32,10 +32,14 @@ backend/.venv/bin/python -m uvicorn app.main:app --app-dir backend --reload --ho
 | `/api/visits/breakdown` | 시설·시간·성별·연령·요일 집계 (`dimension=facility/hour/sex/age/weekday`) |
 | `/api/relations` | 월·기준 시설·상대 시설별 SECD 합계 |
 | `/api/quality` | 전체 행 수, 0값 행 수, 합계, 최댓값 |
+| `/api/clustering/stage1` | 방문 패턴 K-means(1단계) 저장 결과. `POST /api/clustering/stage1/run`으로 실행 |
+| `/api/clustering/stage2` | 유사 박물관 Ward 계층 군집(2단계) 저장 결과. `POST /api/clustering/stage2/run`으로 실행(1단계 결과가 없으면 함께 실행) |
 
 방문 API 공통 필터: `start_date`, `end_date` (YYYY-MM-DD, 양끝 포함), `facility`, `sex` (F/M), `age` (20대/30대), `hour_start`, `hour_end` (0~23, 양끝 포함). 자정을 넘기는 시간 범위는 두 번 조회합니다.
 
 시설 간 API 필터: `start_month`, `end_month` (2025-MM, 양끝 포함), `base_facility`, `related_facility`, `sex`, `age`. 일·시간 필터를 적용하지 않습니다.
+
+군집 API 필터: `start_date`, `end_date`, `sex`, `age`는 학습 범위이고, `facility`는 학습 범위를 바꾸지 않고 선택 시설의 구성·그룹(`facility_view`)만 추가합니다. 같은 조건의 저장 결과가 없으면 GET은 `available: false`를 반환하며, 실행은 POST로만 합니다(1단계 약 15초).
 
 ```sh
 curl 'http://127.0.0.1:8000/api/visits/trend?granularity=month&sex=F'
@@ -58,6 +62,11 @@ curl 'http://127.0.0.1:8000/api/visits/trend?granularity=month&sex=F'
 - 시설 연계는 SECD 최대 상대 비중 ≥50%, 양수 관측 ≥3개월, 특정 한 달 집중 ≤60%일 때 제안합니다. 기준 역할에 자료가 없을 때만 상대 역할로 별도 조회합니다. 역할을 합산하지 않습니다. 비중은 같은 역할의 시설 쌍 집계 합을 분모로 하며 FST를 사용하지 않습니다. 월 전체 집계 범위를 명시합니다.
 - `facility_profile`에 측정값, `strategy_diagnostics`에 7개 규칙의 제안/보류 이유, `strategy_rule_version`에 버전을 제공합니다. `strategies[].chart`에는 `hours`, `period`, `day_types`, `monthly`, `relations` 유형과 근거를 담습니다. 자료 부족과 충분히 관측됐지만 기준을 넘지 않은 경우를 구분합니다.
 - 필요하면 개발 의존성 설치 후 `cd backend`에서 `.venv/bin/python -m app.profile_facilities`로 전체 17개 시설의 분석 보고서를 생성할 수 있습니다. 이 선택적 도구는 `analysis/` 폴더를 만들고 `facility_strategy_review.md`와 `facility_profiles.json`을 저장합니다. 생성물은 Git에서 제외되며 프로그램 실행에 필요하지 않습니다. 화면의 기간·관객 필터를 바꾸면 해당 조건으로 다시 계산하므로 보고서와 달라질 수 있습니다.
+- 군집 분석은 내부에서만 날짜×시설×시간×성별×연령 전체 격자를 만들고 원본 행이 없는 칸을 감지 0·미관측으로 표시합니다. 합계는 변하지 않으며, 분석 단위의 원본 관측 비율과 누락 의심일(원본 행이 하나도 없는 시설-날짜) 계산에만 쓰고 관측값으로 내보내지 않습니다.
+- 1단계는 시설×주(월요일 시작)×평일/주말형(공휴일 포함) 단위로 7개 시간대 감지 비중과 여성·30대 비중을 표준화해 `KMeans(n_init=10, random_state=42)`로 k=3~8을 평가합니다. 감지 0 또는 30 미만 단위는 제외하고, 최소 군집 비중 ≥3%·안정성(80% 재표본 20회 ARI) ≥0.6인 후보 중 실루엣 최댓값을 고릅니다. 감지 규모는 특징에서 제외합니다.
+- 2단계는 시설별 방문 패턴 군집 비중, 주말·저녁·새벽 비중, 계절 변동, 여성·30대 비중, 교차방문 백분위·연결 다양성을 표준화해 Ward 계층 군집으로 2~6개 그룹을 평가하고 실루엣 최댓값을 고릅니다. 시설 1곳 제외 안정성, 특징 그룹 제외 민감도, 덴드로그램 좌표를 함께 제공합니다. 교차방문 지표는 완전 포함 월의 SECD만 사용합니다.
+- 기본 조건(전체 기간·성별·연령) 결과는 1단계 k=3(단위 771·341·329개), 2단계 6개 그룹(4·4·3·2·2·2곳)입니다. 군집·그룹 이름은 자동 제안 설명이며 통계적으로 확정된 고객 유형이나 시설 분류가 아닙니다.
+- 군집 결과는 설정과 데이터 지문의 해시를 이름으로 `backend/storage/clustering/`에 JSON으로 저장하고 같은 조건에서 재사용합니다. CSV가 바뀌면 지문이 달라져 다시 계산합니다.
 - 실제 인증은 없습니다. 개발용 로컬 주소에 바인딩합니다.
 
 ## 검증
