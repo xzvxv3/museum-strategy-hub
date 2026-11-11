@@ -67,3 +67,7 @@ Windows PowerShell에서 `npm.ps1` 실행 정책 오류가 나면 `npm` 대신 `
 
 - [프런트엔드 실행 안내](frontend/README.md)
 - [FastAPI + DuckDB 백엔드 실행 및 API 안내](backend/README.md)
+
+## 추가 기능 수정본
+
+시설 비교·행사 전후 분석·운영 캘린더를 추가했습니다. Windows 실행 파일과 상세 사용법은 [추가기능_사용안내.md](추가기능_사용안내.md)를 참고하세요. 이번 통합 ZIP은 GitHub 업로드용 소스 코드입니다. 기업 CSV는 포함하지 않습니다. 로컬 실행 시 별도로 받은 CSV 두 개를 data/에 넣으세요. 팀의 방문 패턴 군집·유사 박물관 그룹 기능도 유지했습니다.

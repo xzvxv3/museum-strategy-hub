@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .clustering.routes import add_clustering_routes
 from .database import DATA_DIR, DB_PATH, initialize, query
 from .strategies import build_strategy_analysis
+from .event_analysis import register_event_analysis
 
 NOTES = [
     '20대·30대만 포함하며 전체 연령의 방문 특성을 대표하지 않습니다.',
@@ -195,6 +196,7 @@ def create_app(data_dir=DATA_DIR, db_path=DB_PATH):
         data.update(build_strategy_analysis(run, where, params, data, start, end, facility, sex, age))
         return data
 
+    register_event_analysis(app, run)
     return app
 
 
