@@ -379,3 +379,7 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
     height: 64px;
   }
 }
+/* Museum Flow wordmark */
+.sidebar .logo .brand-wordmark{font-size:20px;line-height:1.12;letter-spacing:-.6px;text-align:left}
+.sidebar .logo .brand-wordmark>span{display:block;opacity:1;color:var(--side-muted);font-size:17px;font-weight:600;letter-spacing:.2px;margin-top:3px}
+@media(max-width:900px){.sidebar .logo .brand-wordmark{display:none}}

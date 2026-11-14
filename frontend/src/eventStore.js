@@ -19,7 +19,7 @@ export function writeEvents(events, expected) {
 }
 export function parseEventsBackup(text) {
   const b = JSON.parse(text)
-  if (!b || b.format !== 'culture-events' || b.version !== 1 || !Array.isArray(b.events) || b.events.length > 2000 || b.events.some(v => !validateEvent(v)) || new Set(b.events.map(v => v.id)).size !== b.events.length) throw new Error('올바른 Culture+ 일정 백업 파일이 아닙니다.')
+  if (!b || b.format !== 'culture-events' || b.version !== 1 || !Array.isArray(b.events) || b.events.length > 2000 || b.events.some(v => !validateEvent(v)) || new Set(b.events.map(v => v.id)).size !== b.events.length) throw new Error('올바른 Museum Flow 일정 백업 파일이 아닙니다.')
   return b.events
 }
 export function dateString(d) {

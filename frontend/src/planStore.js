@@ -27,7 +27,7 @@ export function validatePlan(plan) {
 
 export function parseBackup(text) {
   const backup = JSON.parse(text)
-  if (backup?.format !== 'culture-plans' || backup.version !== 1 || !backup.plans || typeof backup.plans !== 'object' || Array.isArray(backup.plans)) throw new Error('Culture+ 실행 계획 백업 파일을 선택해 주세요.')
+  if (backup?.format !== 'culture-plans' || backup.version !== 1 || !backup.plans || typeof backup.plans !== 'object' || Array.isArray(backup.plans)) throw new Error('Museum Flow 실행 계획 백업 파일을 선택해 주세요.')
   const entries = Object.entries(backup.plans)
   if (entries.length > 5000 || entries.some(([id, plan]) => !validatePlan(plan) || id !== JSON.stringify([plan.scope.facility, plan.scope.start_date, plan.scope.end_date, plan.scope.age, plan.scope.sex, plan.strategy.goal]))) throw new Error('계획 형식이나 값이 올바르지 않아 가져오지 않았습니다.')
   return Object.fromEntries(entries)

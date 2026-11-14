@@ -24,7 +24,7 @@ def create_app(data_dir=DATA_DIR, db_path=DB_PATH):
         initialize(data_dir, db_path)
         yield
 
-    app = FastAPI(title='Culture+ Analytics API', version='0.1.0', lifespan=lifespan)
+    app = FastAPI(title='Museum Flow Analytics API', version='0.1.0', lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173'],

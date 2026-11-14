@@ -1,4 +1,4 @@
-# Culture+ 분석 백엔드
+# Museum Flow 분석 백엔드
 
 Python 3.9 이상, FastAPI, DuckDB로 구성합니다. 현재 제공된 CSV 두 개만 사용하며 외부 API나 GPT API 키는 필요하지 않습니다.
 
