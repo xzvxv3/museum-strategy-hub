@@ -1,4 +1,5 @@
-export const storageKey = 'culture-execution-plans-v1'
+import { operatorProfile, operatorStorage } from './operatorProfile.js'
+export const storageKey = operatorStorage('plans')
 export const steps = {
   '시간대 운영': ['선택 시간대의 운영 가능 여부 확인', '안내·해설 인력과 프로그램 구성', '프로그램 시범 운영', '같은 조건으로 시간대별 방문 변화 점검'],
   '관객 프로그램': ['주요 관객 집단과 프로그램 대상 검토', '전시 소개·프로그램 내용 구성', '대상 프로그램 시범 운영', '연령·성별 방문 구성 변화 점검'],
@@ -13,9 +14,9 @@ export const status = checks => checks.every(Boolean) ? '완료' : checks.some(B
 
 export function readPlans() {
   try {
-    const value = JSON.parse(localStorage.getItem(storageKey) || '{}')
+    const value = JSON.parse(localStorage.getItem(storageKey) ?? localStorage.getItem('culture-execution-plans-v1') ?? '{}')
     if (!value || Array.isArray(value) || typeof value !== 'object') return {}
-    return Object.fromEntries(Object.entries(value).filter(([, plan]) => plan?.strategy?.goal && plan.scope && typeof plan.updated_at === 'string' && Array.isArray(plan.checks) && plan.checks.length === 4))
+    return Object.fromEntries(Object.entries(value).filter(([, plan]) => plan?.strategy?.goal && plan.scope && (operatorProfile.isRoot || plan.scope?.facility === operatorProfile.facility) && typeof plan.updated_at === 'string' && Array.isArray(plan.checks) && plan.checks.length === 4))
   } catch { return {} }
 }
 
@@ -30,5 +31,6 @@ export function parseBackup(text) {
   if (backup?.format !== 'culture-plans' || backup.version !== 1 || !backup.plans || typeof backup.plans !== 'object' || Array.isArray(backup.plans)) throw new Error('Museum Flow 실행 계획 백업 파일을 선택해 주세요.')
   const entries = Object.entries(backup.plans)
   if (entries.length > 5000 || entries.some(([id, plan]) => !validatePlan(plan) || id !== JSON.stringify([plan.scope.facility, plan.scope.start_date, plan.scope.end_date, plan.scope.age, plan.scope.sex, plan.strategy.goal]))) throw new Error('계획 형식이나 값이 올바르지 않아 가져오지 않았습니다.')
+  if (!operatorProfile.isRoot && entries.some(([, plan]) => plan.scope.facility !== operatorProfile.facility)) throw new Error('담당 박물관의 실행 계획 백업만 가져올 수 있습니다.')
   return Object.fromEntries(entries)
 }

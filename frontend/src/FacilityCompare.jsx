@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { operatorProfile } from './operatorProfile.js'
 import { Card } from './ui'
 import useAnalysis from './useAnalysis'
 import DateRangePicker from './DateRangePicker'
@@ -22,8 +23,8 @@ function CompareCard({ facility, filters, onSelect, facilities, selected, index 
     [facility, data.range.start_date, data.range.end_date, filters.age || '20·30대', filters.sex || '전체', observed ? total : '', observed, calendarDays, calendarDays ? observed / calendarDays * 100 : '', observed ? total / observed : '', total ? weekend / total * 100 : ''],
   ])
   return <section className="card compare-card">
-    <div className="compare-number">{index === 0 ? '기준 시설' : `비교 시설 ${index}`}</div>
-    <label className="ops-field">시설 선택 {index + 1}<select value={facility} onChange={e => onSelect(e.target.value)}>{facilities.map(f => <option key={f} value={f} disabled={selected.includes(f) && f !== facility}>{f}</option>)}</select></label>
+    <div className="compare-number">{index === 0 ? (operatorProfile.isRoot ? '기준 시설' : '우리 박물관 · 기준 시설') : `비교 시설 ${index}`}</div>
+    <label className="ops-field">시설 선택 {index + 1}<select disabled={!operatorProfile.isRoot && index === 0} value={facility} onChange={e => onSelect(e.target.value)}>{facilities.map(f => <option key={f} value={f} disabled={selected.includes(f) && f !== facility}>{f}</option>)}</select></label>
     {resource.loading && <p role="status">시설 데이터를 불러오는 중…</p>}
     {resource.error && <div role="alert"><p>{resource.error}</p><button className="outline" onClick={resource.retry}>다시 시도</button></div>}
     {data && <>
@@ -53,7 +54,7 @@ function CompareCard({ facility, filters, onSelect, facilities, selected, index 
 export default function FacilityCompare({ metadata, filters, onChange }) {
   const facilities = metadata.facilities
   const [selected, setSelected] = useState(() => {
-    const base = filters.facility || facilities[0]
+    const base = operatorProfile.isRoot ? filters.facility || facilities[0] : operatorProfile.facility
     return [base, ...facilities.filter(f => f !== base)].slice(0, Math.min(3, facilities.length))
   })
   return <div className="ops-page">

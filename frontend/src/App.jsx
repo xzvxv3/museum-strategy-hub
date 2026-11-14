@@ -13,13 +13,14 @@ import { downloadCsv, exportVisits } from './downloads'
 import FacilityCompare from './FacilityCompare'
 import Operations from './Operations'
 import Login from './Login'
+import { operatorProfile, operatorStorage, startRootDemo } from './operatorProfile.js'
 import './App.css'
 import './Operations.css'
 
 const fmt = v => Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 0 })
 const pct = (v, total) => total > 0 ? `${(v / total * 100).toFixed(1)}%` : '—'
 const sexLabel = v => ({ F: '여성', M: '남성' })[v] || v
-const initial = { facility: '', start_date: '', end_date: '', sex: '', age: '' }
+const initial = { facility: operatorProfile.facility, start_date: '', end_date: '', sex: '', age: '' }
 const tabs = ['방문 현황', '관객 구성', '시설 비교·연관 방문']
 const typeTabs = ['방문 패턴', '유사 박물관']
 
@@ -56,8 +57,9 @@ function Breakdown({ title, items, label = v => v, variant = '' }) {
 
 function Filters({ value, onChange, metadata }) {
   const set = e => onChange({ ...value, [e.target.name]: e.target.value })
-  return <div className="card live-filters" aria-label="공통 분석 필터">
-    <label className="filter-field filter-facility">시설<select name="facility" value={value.facility} onChange={set}><option value="">전체 시설</option>{metadata.facilities.map(v => <option key={v}>{v}</option>)}</select></label>
+  return <div className={`card live-filters ${operatorProfile.isRoot ? 'root-filters' : ''}`} aria-label="공통 분석 필터">
+
+    {operatorProfile.isRoot && <label className="filter-field filter-facility">시설<select name="facility" value={value.facility} onChange={set}><option value="">전체 시설</option>{metadata.facilities.map(facility => <option key={facility}>{facility}</option>)}</select></label>}
     <DateRangePicker start={value.start_date} end={value.end_date} min={metadata.visits.start_date} max={metadata.visits.end_date} onChange={(start, end) => onChange({ ...value, start_date: start, end_date: end })}/>
     <label className="filter-field filter-age">연령<select name="age" value={value.age} onChange={set}><option value="">20·30대 전체</option>{metadata.ages.map(v => <option key={v}>{v}</option>)}</select></label>
     <label className="filter-field filter-sex">성별<select name="sex" value={value.sex} onChange={set}><option value="">전체 성별</option><option value="F">여성</option><option value="M">남성</option></select></label>
@@ -131,7 +133,7 @@ function saved(key, fallback) { try { return JSON.parse(localStorage.getItem(key
 function Settings({ chart, setChart, primary, sidebar, setTheme, metadata, quality, notify }) {
   const [notifications, setNotifications] = useState(() => saved('culture-notifications', [true, true, true, false]))
   const account = saved('culture-account', {})
-  return <div className="settings-grid"><div><Card title="계정 정보 (이 기기 저장)"><form onSubmit={e => { e.preventDefault(); localStorage.setItem('culture-account', JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))); notify('계정 정보를 이 기기에 저장했습니다.') }}><label>아이디<input value="abcd" disabled/></label><label>이름<input name="name" defaultValue={account.name || '운영 담당자'} required/></label><label>이메일<input name="email" type="email" defaultValue={account.email || ''} required/></label><button className="outline account-save">계정 정보 저장</button></form><div className="divider"/><p className="card-sub">로그인은 데모이며 실제 인증·비밀번호 변경은 제공하지 않습니다.</p></Card><Card title="분석 데이터"><p>분석 대상 시설 {metadata.facilities.length}개</p><p className="card-sub">시설 권한 관리와 연결 계정 인증은 제공하지 않습니다.</p></Card><Card title="알림 환경설정 (이 기기 저장)">{['데이터 갱신 완료', '데이터 검증 경고', '새 개선 기회 발견', '이메일로도 받기'].map((label, i) => <div className="notification-row" key={label}><b>{label}</b><button className={`switch ${notifications[i] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={!!notifications[i]} onClick={() => { const next = [...notifications]; next[i] = !next[i]; setNotifications(next); localStorage.setItem('culture-notifications', JSON.stringify(next)) }}><span/></button></div>)}<p className="card-sub">선호만 저장합니다. 실제 알림·이메일 발송 기능은 없습니다.</p></Card></div><div><Card title="화면 테마" action={<button className="text-button" onClick={() => { setTheme('primary', '#176b68'); setTheme('sidebar', '#163638') }}>기본값 복원</button>}>{[['primary', '메인 컬러', primary], ['sidebar', '사이드바 컬러', sidebar]].map(([key, label, value]) => <label className="theme-field" key={key}>{label}<input aria-label={label} type="color" value={value} onChange={e => setTheme(key, e.target.value)}/><code>{value}</code></label>)}</Card><Card title="기본 차트 형태"><div className="segmented">{['선형', '막대', '원형'].map(v => <button key={v} className={chart === v ? 'selected' : ''} onClick={() => setChart(v)}>{v}</button>)}</div><p className="card-sub">방문 추이 차트에 적용되며 이 기기에 저장합니다.</p></Card><Card title="실제 데이터 검증"><ResourceState resource={quality}>{quality.data && <><p>{quality.data.startup_validation}</p><table><thead><tr><th>원본</th><th>행 수</th><th>0값 행</th></tr></thead><tbody>{Object.entries(quality.data.datasets).map(([name, item]) => <tr key={name}><td>{name === 'visits' ? 'FST' : 'SECD'}</td><td>{fmt(item.rows)}</td><td>{fmt(item.zero_rows)}</td></tr>)}</tbody></table><p className="card-sub">전체 원본 기준</p></>}</ResourceState></Card></div></div>
+  return <div className="settings-grid"><div><Card title="계정 정보 (이 기기 저장)"><form onSubmit={e => { e.preventDefault(); localStorage.setItem('culture-account', JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))); notify('계정 정보를 이 기기에 저장했습니다.') }}><label>아이디<input value={operatorProfile.isRoot ? 'root' : operatorProfile.facility + ' 운영자'} disabled/></label><label>이름<input name="name" defaultValue={account.name || '운영 담당자'} required/></label><label>이메일<input name="email" type="email" defaultValue={account.email || ''} required/></label><button className="outline account-save">계정 정보 저장</button></form><div className="divider"/><p className="card-sub">로그인은 데모이며 실제 인증·비밀번호 변경은 제공하지 않습니다.</p></Card><Card title="분석 데이터"><p>분석 대상 시설 {metadata.facilities.length}개</p><p className="card-sub">시설 권한 관리와 연결 계정 인증은 제공하지 않습니다.</p></Card><Card title="알림 환경설정 (이 기기 저장)">{['데이터 갱신 완료', '데이터 검증 경고', '새 개선 기회 발견', '이메일로도 받기'].map((label, i) => <div className="notification-row" key={label}><b>{label}</b><button className={`switch ${notifications[i] ? 'on' : ''}`} role="switch" aria-label={label} aria-checked={!!notifications[i]} onClick={() => { const next = [...notifications]; next[i] = !next[i]; setNotifications(next); localStorage.setItem('culture-notifications', JSON.stringify(next)) }}><span/></button></div>)}<p className="card-sub">선호만 저장합니다. 실제 알림·이메일 발송 기능은 없습니다.</p></Card></div><div><Card title="화면 테마" action={<button className="text-button" onClick={() => { setTheme('primary', '#176b68'); setTheme('sidebar', '#163638') }}>기본값 복원</button>}>{[['primary', '메인 컬러', primary], ['sidebar', '사이드바 컬러', sidebar]].map(([key, label, value]) => <label className="theme-field" key={key}>{label}<input aria-label={label} type="color" value={value} onChange={e => setTheme(key, e.target.value)}/><code>{value}</code></label>)}</Card><Card title="기본 차트 형태"><div className="segmented">{['선형', '막대', '원형'].map(v => <button key={v} className={chart === v ? 'selected' : ''} onClick={() => setChart(v)}>{v}</button>)}</div><p className="card-sub">방문 추이 차트에 적용되며 이 기기에 저장합니다.</p></Card><Card title="실제 데이터 검증"><ResourceState resource={quality}>{quality.data && <><p>{quality.data.startup_validation}</p><table><thead><tr><th>원본</th><th>행 수</th><th>0값 행</th></tr></thead><tbody>{Object.entries(quality.data.datasets).map(([name, item]) => <tr key={name}><td>{name === 'visits' ? 'FST' : 'SECD'}</td><td>{fmt(item.rows)}</td><td>{fmt(item.zero_rows)}</td></tr>)}</tbody></table><p className="card-sub">전체 원본 기준</p></>}</ResourceState></Card></div></div>
 }
 
 function DataGuide({ children, onClose }) {
@@ -152,7 +154,7 @@ function DataGuide({ children, onClose }) {
 }
 
 function readFilters() {
-  try { const value = JSON.parse(localStorage.getItem('culture-filters') || '{}'); return Object.fromEntries(Object.keys(initial).map(key => [key, typeof value?.[key] === 'string' && (key === 'facility' ? value[key].length <= 100 : key === 'age' ? ['', '20대', '30대'].includes(value[key]) : key === 'sex' ? ['', 'F', 'M'].includes(value[key]) : value[key] === '' || /^2025-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value[key])) ? value[key] : ''])) } catch { return initial }
+  try { const value = JSON.parse(localStorage.getItem(operatorStorage('filters')) || '{}'); return Object.fromEntries(Object.keys(initial).map(key => [key, typeof value?.[key] === 'string' && (key === 'facility' ? value[key].length <= 100 : key === 'age' ? ['', '20대', '30대'].includes(value[key]) : key === 'sex' ? ['', 'F', 'M'].includes(value[key]) : value[key] === '' || /^2025-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value[key])) ? value[key] : ''])) } catch { return initial }
 }
 
 function App() {
@@ -161,14 +163,15 @@ function App() {
   const [planToOpen, setPlanToOpen] = useState(null)
   const [planStatus, setPlanStatus] = useState('전체')
   const [planFacility, setPlanFacility] = useState('')
-  const [filters, setFilters] = useState(readFilters), [granularity, setGranularity] = useState('month')
+  const [filters, setFilterValues] = useState(() => { const saved = readFilters(); return operatorProfile.isRoot ? saved : { ...saved, facility: operatorProfile.facility } }), [granularity, setGranularity] = useState('month')
+  const setFilters = value => setFilterValues(operatorProfile.isRoot ? value : { ...value, facility: operatorProfile.facility })
   const [chart, setChartValue] = useState(() => localStorage.getItem('culture-chart') || '선형')
   const [primary, setPrimary] = useState(() => (!localStorage.getItem('culture-primary') || localStorage.getItem('culture-primary') === '#416c50') ? '#176b68' : localStorage.getItem('culture-primary'))
   const [sidebar, setSidebar] = useState(() => (!localStorage.getItem('culture-sidebar') || localStorage.getItem('culture-sidebar') === '#243e32') ? '#163638' : localStorage.getItem('culture-sidebar'))
   const [logged, setLogged] = useState(() => { try { return sessionStorage.getItem('museum-flow-session') === 'active' } catch { return false } }), [loginError, setLoginError] = useState(''), [attempts, setAttempts] = useState(5)
   const [modal, setModal] = useState(false), [toast, setToast] = useState('')
   const metadata = useResource('metadata'), dashboard = useResource('dashboard', filters), quality = useResource('quality')
-  useEffect(() => { try { localStorage.setItem('culture-filters', JSON.stringify(filters)) } catch { /* Filters still work without storage. */ } }, [filters])
+  useEffect(() => { try { localStorage.setItem(operatorStorage('filters'), JSON.stringify(filters)) } catch { /* Filters still work without storage. */ } }, [filters])
   const setChart = v => { setChartValue(v); localStorage.setItem('culture-chart', v) }
   const setTheme = (key, v) => { (key === 'primary' ? setPrimary : setSidebar)(v); localStorage.setItem(`culture-${key}`, v) }
   const notify = v => { setToast(v); setTimeout(() => setToast(''), 3500) }
@@ -182,21 +185,22 @@ function App() {
   if (!logged) return <Login style={style} error={loginError} attempts={attempts} onLogin={e => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
-    if (form.get('id') === 'abcd' && form.get('password') === '1234') {
-      try { sessionStorage.setItem('museum-flow-session', 'active') } catch { /* Login works without browser storage. */ }
-      setLogged(true)
-      setLoginError('')
-      if (form.get('remember')) localStorage.setItem('culture-id', 'abcd')
-      else localStorage.removeItem('culture-id')
-      navigate('홈')
+    if (form.get('id') === 'root' && form.get('password') === '1234') {
+      try {
+        if (form.get('remember')) localStorage.setItem('culture-id', 'root')
+        else localStorage.removeItem('culture-id')
+        startRootDemo()
+      } catch {
+        setLoginError('로그인 상태를 저장할 수 없습니다. 브라우저 저장 공간 설정을 확인해 주세요.')
+      }
     } else {
       setAttempts(x => Math.max(0, x - 1))
       setLoginError('아이디 또는 비밀번호를 확인해 주세요.')
     }
   }}/>
 
-  return <div className="app" style={style}><aside className="sidebar"><a className="logo" onClick={() => navigate('홈')}><span className="brand-mascot"><Mascot/></span><span className="brand-wordmark">Museum <span>Flow</span></span></a><div className="institution facility-profile-card" title={facility}><div className="institution-icon"><Icon name="museum"/></div><div className="facility-profile-copy"><span className="facility-profile-caption">분석 중인 시설</span><b>{facility}</b><small className="facility-scope-badge"><i aria-hidden="true"/>{filters.facility ? '개별 시설' : `${metadata.data?.facilities.length || 17}개 시설 전체`}</small></div></div><nav>{[['홈', 'home'], ['데이터 분석', 'chart'], ['시설·방문 유형', 'compass'], ['운영전략', 'bulb'], ['실행 계획', 'file'], ['시설 비교', 'museum'], ['행사 전후 분석', 'chart'], ['운영 캘린더', 'calendar']].map(([label, icon]) => <button key={label} className={page === label ? 'active' : ''} onClick={() => navigate(label)} aria-label={label}><Icon name={icon}/><span>{label}</span></button>)}</nav><div className="side-bottom"><button onClick={() => navigate('설정')} aria-label="설정"><Icon name="settings"/>설정</button><button aria-label="로그아웃" onClick={() => { try { sessionStorage.removeItem('museum-flow-session') } catch { /* Storage may be unavailable. */ } setLogged(false); setAttempts(5); setLoginError('') }}><Icon name="logout"/>로그아웃</button></div><div className="side-footer">MUSEUM FLOW<br/><span>박물관의 내일을 위한 데이터</span></div></aside><div className="workspace"><header><span>{page}{page === '데이터 분석' && ` › ${tab}`}{page === '시설·방문 유형' && ` › ${typeTab}`}</span><div className="header-right"><div className="date"><Icon name="calendar" size={16}/>{['실행 계획', '운영 캘린더', '행사 전후 분석'].includes(page) ? '운영 기록 관리' : range}</div><div className="avatar"><Icon name="user"/></div></div></header><main><div className="page-heading"><div><span className="eyebrow">MUSEUM FLOW / ANALYTICS</span><h1>{page === '홈' ? `${facility} 운영 대시보드` : page}</h1></div><div className={`heading-actions ${page === '홈' ? 'home-heading-actions' : ''}`}><button className={page === '홈' ? 'text-button home-data-guide' : 'outline'} onClick={() => setModal(true)}>데이터 기준 안내</button>{page === '데이터 분석' && (tab === tabs[0] || tab === tabs[1]) && <button className="outline" disabled={!dashboard.data} onClick={() => exportVisits(dashboard.data, filters)}>집계 CSV 다운로드</button>}{page === '운영전략' && <button className="primary" disabled={!dashboard.data} onClick={() => window.print()}>PDF 보고서 내보내기</button>}</div></div>
-    {['운영 캘린더', '행사 전후 분석'].includes(page) ? <Operations view={page} metadata={metadata.data} onNavigate={navigate} onPlan={openPlans}/> : page === '시설 비교' ? <ResourceState resource={metadata}>{metadata.data && <FacilityCompare metadata={metadata.data} filters={filters} onChange={setFilters}/>}</ResourceState> : page === '실행 계획' ? <ExecutionPlans initialId={planToOpen} initialStatus={planStatus} initialFacility={planFacility} onExplore={() => navigate('운영전략')}/> : <ResourceState resource={metadata}>{metadata.data && <>{page !== '설정' && <Filters value={filters} onChange={setFilters} metadata={metadata.data}/>}{page === '설정' ? <Settings {...{ chart, setChart, primary, sidebar, setTheme, quality, notify }} metadata={metadata.data}/> : <>
+  return <div className="app" style={style}><aside className="sidebar"><a className="logo" onClick={() => navigate('홈')}><span className="brand-mascot"><Mascot/></span><span className="brand-wordmark">Museum <span>Flow</span></span></a><div className="institution facility-profile-card" title={facility}><div className="institution-icon"><Icon name="museum"/></div><div className="facility-profile-copy"><span className="facility-profile-caption">{operatorProfile.isRoot ? '분석 중인 시설' : '담당 시설'}</span><b>{facility}</b><small className="facility-scope-badge"><i aria-hidden="true"/>{operatorProfile.role}</small></div></div><nav>{[['홈', 'home'], ['데이터 분석', 'chart'], ['시설·방문 유형', 'compass'], ['운영전략', 'bulb'], ['실행 계획', 'file'], ['시설 비교', 'museum'], ['행사 전후 분석', 'chart'], ['운영 캘린더', 'calendar']].map(([label, icon]) => <button key={label} className={page === label ? 'active' : ''} onClick={() => navigate(label)} aria-label={label}><Icon name={icon}/><span>{label}</span></button>)}</nav><div className="side-bottom"><button onClick={() => navigate('설정')} aria-label="설정"><Icon name="settings"/>설정</button><button aria-label="로그아웃" onClick={() => { try { sessionStorage.removeItem('museum-flow-session') } catch { /* Storage may be unavailable. */ } setLogged(false); setAttempts(5); setLoginError('') }}><Icon name="logout"/>로그아웃</button></div><div className="side-footer">MUSEUM FLOW<br/><span>박물관의 내일을 위한 데이터</span></div></aside><div className="workspace"><header><span>{page}{page === '데이터 분석' && ` › ${tab}`}{page === '시설·방문 유형' && ` › ${typeTab}`}</span><div className="header-right"><div className="date"><Icon name="calendar" size={16}/>{['실행 계획', '운영 캘린더', '행사 전후 분석'].includes(page) ? '운영 기록 관리' : range}</div><div className="avatar"><Icon name="user"/></div></div></header><main><div className="operator-context"><span><Icon name="museum" size={17}/>{operatorProfile.facility || '전체 시설'} · {operatorProfile.role}</span><small>{operatorProfile.isRoot ? '총괄 운영자 데모 · 전체 시설을 선택해 분석할 수 있습니다.' : '운영자 데모 · 비교 시설은 참고용으로 조회합니다.'}</small></div><div className="page-heading"><div><span className="eyebrow">MUSEUM FLOW / ANALYTICS</span><h1>{page === '홈' ? `${facility} 운영 현황` : page}</h1></div><div className={`heading-actions ${page === '홈' ? 'home-heading-actions' : ''}`}><button className={page === '홈' ? 'text-button home-data-guide' : 'outline'} onClick={() => setModal(true)}>데이터 기준 안내</button>{page === '데이터 분석' && (tab === tabs[0] || tab === tabs[1]) && <button className="outline" disabled={!dashboard.data} onClick={() => exportVisits(dashboard.data, filters)}>집계 CSV 다운로드</button>}{page === '운영전략' && <button className="primary" disabled={!dashboard.data} onClick={() => window.print()}>PDF 보고서 내보내기</button>}</div></div>
+    {['운영 캘린더', '행사 전후 분석'].includes(page) ? <Operations view={page} metadata={metadata.data} onNavigate={navigate} onPlan={openPlans}/> : page === '시설 비교' ? <ResourceState resource={metadata}>{metadata.data && <FacilityCompare metadata={metadata.data} filters={filters} onChange={setFilters}/>}</ResourceState> : page === '실행 계획' ? <ExecutionPlans initialId={planToOpen} initialStatus={planStatus} initialFacility={planFacility || operatorProfile.facility} onExplore={() => navigate('운영전략')}/> : <ResourceState resource={metadata}>{metadata.data && <>{page !== '설정' && <Filters value={filters} onChange={setFilters} metadata={metadata.data}/>}{page === '설정' ? <Settings {...{ chart, setChart, primary, sidebar, setTheme, quality, notify }} metadata={metadata.data}/> : <>
             {page === '데이터 분석' && (
         <div className="analysis-mascot-guide">
           <Mascot variant="investigate" />

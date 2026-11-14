@@ -1,19 +1,14 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Icon, Mascot } from './ui'
 import './Login.css'
+import { operatorProfile, demoOperators, quickOperators, startOperatorDemo } from './operatorProfile.js'
 
 export default function Login({ style, onLogin, error, attempts }) {
   const [showPassword, setShowPassword] = useState(false)
-  const formRef = useRef(null)
   const [capsLock, setCapsLock] = useState(false)
-  const savedId = localStorage.getItem('culture-id') || ''
-
-  function fillDemo() {
-    const form = formRef.current
-    form.elements.id.value = 'abcd'
-    form.elements.password.value = '1234'
-    form.elements.password.focus()
-  }
+  const [demoError, setDemoError] = useState('')
+  const [demoFacility, setDemoFacility] = useState(operatorProfile.facility || quickOperators[0].facility)
+  const savedId = localStorage.getItem('culture-id') === 'root' ? 'root' : ''
 
   return <div className="culture-login" style={style}>
     <section className="login-story" aria-label="Museum Flow 소개">
@@ -36,8 +31,8 @@ export default function Login({ style, onLogin, error, attempts }) {
       <div className="login-entry-inner">
         <span className="login-entry-kicker"><span/>MUSEUM FLOW WORKSPACE</span>
         <h2 id="login-title">반가워요, 운영자님.</h2>
-        <p className="login-intro">박물관의 새로운 인사이트를 만나러 갈까요?</p>
-        <form ref={formRef} onSubmit={onLogin}>
+        <p className="login-intro">총괄 계정으로 로그인하거나 아래에서 운영자 데모를 선택하세요.</p>
+        <form onSubmit={onLogin}>
           <div className="login-field">
             <label htmlFor="login-id">아이디</label>
             <div className="login-input-wrap"><input id="login-id" name="id" autoComplete="username" placeholder="아이디를 입력해 주세요" required defaultValue={savedId} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined}/></div>
@@ -52,10 +47,19 @@ export default function Login({ style, onLogin, error, attempts }) {
           <button className="login-submit" disabled={!attempts} type="submit">로그인<Icon name="arrow" size={19}/></button>
         </form>
         <aside className="login-demo" aria-label="데모 계정 안내">
-          <div className="login-demo-heading"><span><Icon name="compass" size={18}/>처음 방문하셨나요?</span><span className="login-demo-badge">DEMO</span></div>
-          <p>데모 계정으로 Museum Flow를 둘러보세요.</p>
-          <div className="login-demo-account"><span>아이디 <b>abcd</b></span><span>비밀번호 <b>1234</b></span><button type="button" onClick={fillDemo}>계정 입력<Icon name="arrow" size={14}/></button></div>
-          <small>UI 체험용 계정이며 실제 사용자 인증은 제공하지 않습니다.</small>
+          <div className="login-demo-heading"><span><Icon name="compass" size={18}/>운영자 화면 체험하기</span><span className="login-demo-badge">DEMO</span></div>
+          <p>박물관·전시관 등 전체 {demoOperators.length}개 시설 중 담당 시설을 선택하세요.</p>
+          <div className="login-quick-heading">빠른 선택 <span>관측일이 충분한 시연 추천 시설</span></div>
+          <div className="login-quick-choices">{quickOperators.map(operator => <button key={operator.facility} type="button" aria-pressed={demoFacility === operator.facility} onClick={() => setDemoFacility(operator.facility)}><strong>{operator.facility}</strong></button>)}</div>
+          <div className="login-facility-results">전체 시설 · {demoOperators.length}곳 · 가나다순</div>
+          <div className="login-facility-list" role="group" aria-label="운영자 데모 시설 선택">{demoOperators.map(operator => <label key={operator.facility} className={demoFacility === operator.facility ? 'selected' : ''}><input type="radio" name="demo-facility" value={operator.facility} checked={demoFacility === operator.facility} onChange={() => setDemoFacility(operator.facility)}/><span>{operator.facility}</span>{demoFacility === operator.facility && <Icon name="check" size={16}/>}</label>)}</div>
+
+          <button type="button" className="login-demo-start" onClick={() => {
+            try { startOperatorDemo(demoFacility) }
+            catch { setDemoError('데모 시작에 필요한 브라우저 저장 공간을 사용할 수 없습니다. 저장 공간 설정을 확인해 주세요.') }
+          }}><span>{demoFacility} 운영자 화면 시작</span><Icon name="arrow" size={17}/></button>
+          {demoError && <p className="login-error" role="alert">{demoError}</p>}
+          <p className="login-root-note">총괄 운영자는 상단에서 <b>root / 1234</b>로 로그인할 수 있습니다.</p>
         </aside>
         <details className="login-help"><summary>Museum Flow에서는 무엇을 할 수 있나요?</summary><p>시설·기간·관객별 방문 데이터를 비교하고 운영전략을 살펴볼 수 있습니다. 실행 계획과 운영 캘린더로 다음 활동을 준비해 보세요.</p></details>
         <div className="login-entry-footer"><span>Museum Flow · 박물관 운영을 위한 데이터 파트너</span><span>INSIGHT INTO ACTION</span></div>

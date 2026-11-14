@@ -397,3 +397,13 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 @media print{.relation-export-panel{display:none}}
 
 .range-footer{flex-wrap:wrap;row-gap:14px}.range-selection-actions{align-items:center;gap:13px!important}.range-selection-actions .text-button{font-size:10px;min-height:34px}.range-selection-actions .text-button:first-child{color:#64766a}.range-footer>div:last-child{margin-left:auto}
+
+/* Assigned-facility operator demo */
+.operator-context{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 18px;padding:12px 16px;margin-bottom:22px;border:1px solid #d9e5dd;background:#edf4ef;border-radius:10px}.operator-context>span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#335e4f}.operator-context small{font-size:10px;color:#6a7f71}
+.live-filters{grid-template-columns:minmax(230px,2fr) minmax(110px,1fr) minmax(110px,1fr) auto;grid-template-areas:'period age sex reset'}
+@media(max-width:900px){.live-filters{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:'period period' 'age sex' 'reset reset'}}
+@media(max-width:600px){.operator-context{padding:12px}.live-filters{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:'period period' 'age sex' 'reset reset'}}
+
+.live-filters.root-filters{grid-template-columns:minmax(160px,1.3fr) minmax(230px,1.8fr) minmax(100px,.8fr) minmax(100px,.8fr) auto;grid-template-areas:'facility period age sex reset'}
+@media(max-width:1100px){.live-filters.root-filters{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:'facility period' 'age sex' 'reset reset'}}
+@media(max-width:600px){.live-filters.root-filters{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:'facility facility' 'period period' 'age sex' 'reset reset'}}
