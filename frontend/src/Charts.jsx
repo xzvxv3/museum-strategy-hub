@@ -24,7 +24,6 @@ export function WeekHourHeatmap({ items = [], audience = [], hourStart = 0, hour
   const pickedCell = picked ? cells.get(picked) : null
   const detail = picked ? audience.filter(row => `${row.weekday}-${row.hour}` === picked) : []
   return <Card title="요일 × 시간대 방문 히트맵" className="heatmap-card">
-    <p className="card-sub">색이 진할수록 방문 규모가 큽니다. 칸을 선택하면 집계값과 관측일 수를 확인할 수 있습니다.</p>
     <div className="heatmap-readout" aria-live="polite">{readout}</div>
     <div className="heatmap-scroll" tabIndex="0" role="region" aria-label="요일 시간대 히트맵 표, 작은 화면에서 좌우로 스크롤">
       <table className="heatmap-table"><caption className="sr-only">요일별 00~23시 방문 인구 합계. 각 칸을 선택하면 값을 확인할 수 있습니다.</caption>
@@ -41,10 +40,6 @@ export function WeekHourHeatmap({ items = [], audience = [], hourStart = 0, hour
       </table>
     </div>
     <div className="heatmap-legend"><span>적음</span>{[1, 2, 3, 4, 5].map(level => <i key={level} className={`level-${level}`} aria-hidden="true"/>)}<span>많음 · 최대 {number(maximum)}명</span><span>★ 최다</span></div>
-    <div className="heatmap-state-guide" aria-label="히트맵 기호 안내">
-      <span><b className="heat-key-empty" aria-hidden="true"/><span><strong>집계값이 0이거나 관측 데이터 없음</strong>칸을 선택하면 상세 정보에서 구분할 수 있습니다.</span></span>
-      <span><b className="heat-key-excluded">×</b><span><strong>분석 제외</strong>선택한 시간 범위 밖</span></span>
-    </div>
     {picked && <section className="heatmap-detail" aria-label="선택 시간대 상세"><div className="detail-heading"><div><span className="eyebrow">SELECTED SEGMENT</span><h3>{describe(picked)}</h3></div><button className="outline" onClick={() => { setPicked(null); setActive(null) }}>선택 해제</button></div>{pickedCell ? <><div className="detail-metrics"><div><span>방문 인구</span><strong>{number(pickedCell.population)}<small>명</small></strong></div><div><span>관측일 수</span><strong>{pickedCell.observed_days}<small>일</small></strong></div><div><span>선택 범위 내 비중</span><strong>{items.reduce((s, r) => s + Number(r.population), 0) > 0 ? (pickedCell.population / items.reduce((s, r) => s + Number(r.population), 0) * 100).toFixed(1) : '—'}<small>%</small></strong></div></div><Composition items={detail}/></> : <p className="definition-note">선택 시간 범위 밖이거나 관측 행이 없어 상세 구성을 표시할 수 없습니다.</p>}</section>}
   </Card>
 }

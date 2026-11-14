@@ -30,7 +30,7 @@ function PatternResult({ data: res, facility }) {
   const excludedText = Object.entries(res.units.excluded_by_reason).filter(([, v]) => v).map(([k, v]) => `${REASON[k]} ${num(v)}`).join(' · ')
 
   return <section className="cluster-page" aria-label="방문 패턴 군집">
-    <div className="info-banner"><span>방문 패턴은 <b>{res.unit_label}</b> 단위로 시간대별 감지 비중(합 = 1)을 K-means로 묶은 결과입니다. 개인이나 고객 유형을 분류한 것이 아니며, 값은 실제 입장객이 아닌 시설 주변 <b>감지 인구</b>입니다. 기간·연령·성별 필터가 학습 범위이고, 시설 필터는 선택 시설 강조에만 쓰입니다.</span></div>
+    <div className="cluster-method-note"><p>실제 입장객이 아닌 시설 주변 감지 인구 기준입니다.</p><details className="cluster-method-details"><summary>분석 방법</summary><p>방문 패턴은 <b>{res.unit_label}</b> 단위로 시간대별 감지 비중(합 = 1)을 K-means로 묶은 결과입니다. 개인이나 고객 유형을 분류한 것이 아니며, 값은 실제 입장객이 아닌 시설 주변 <b>감지 인구</b>입니다. 기간·연령·성별 필터가 학습 범위이고, 시설 필터는 선택 시설 강조에만 쓰입니다.</p></details></div>
 
     <StatCards items={[
       ['선택 군집 수 (k)', sel.k, '개', `${sel.mode === 'auto' ? '자동 선택' : '사용자 지정'} · 후보 k=${res.config.k_min}~${res.config.k_max}`],

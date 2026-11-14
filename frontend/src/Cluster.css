@@ -44,3 +44,5 @@
 .z-high{color:#1d5f9e;font-weight:700}
 .z-low{color:#b0483f;font-weight:700}
 @media(max-width:900px){.stack-row{grid-template-columns:90px 1fr}}
+
+.cluster-method-note{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;margin:14px 0 20px;color:#738177;font-size:11px}.cluster-method-note>p{font-size:10px}.cluster-method-details{flex:1;min-width:120px;text-align:right}.cluster-method-details summary{display:inline list-item;cursor:pointer;font-size:11px;color:#597361;list-style-position:inside;padding:5px 0}.cluster-method-details[open]{flex-basis:100%;text-align:left}.cluster-method-details>p{margin-top:8px;padding:14px 16px;background:#f5f8f3;border:1px solid #e1e8dc;border-radius:9px;font-size:11px;line-height:1.9;color:#657566;text-align:left}

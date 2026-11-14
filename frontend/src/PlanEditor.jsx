@@ -21,7 +21,7 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
     <form onSubmit={event => { event.preventDefault(); const saved = onSave(id, { strategy, scope, owner: owner.trim(), due, memo: memo.trim(), checks, updated_at: new Date().toISOString() }); if (saved) { try { sessionStorage.removeItem(draftKey) } catch { /* Optional draft storage. */ } } setMessage(saved ? '실행 계획을 이 브라우저에 저장했습니다.' : '저장 공간에 접근하지 못했습니다. 브라우저 설정을 확인해 주세요.') }}>
       <div className="plan-fields"><label>담당자<input name="plan_owner" value={owner} maxLength={80} placeholder="예: 전시운영팀" onChange={event => { setOwner(event.target.value); dirty() }}/></label><label>목표일<input name="plan_due" type="date" value={due} onChange={event => { setDue(event.target.value); dirty() }}/></label></div>
       <label>실행 메모<textarea name="plan_memo" value={memo} maxLength={2000} rows={3} placeholder="실행 방법과 점검할 내용을 적어보세요." onChange={event => { setMemo(event.target.value); dirty() }}/><span className="print-memo">{memo || '—'}</span></label>
-      <div className="plan-save-row"><span role="status">{message || '작성 내용은 이 탭에 임시 보관됩니다. 완료 후 저장해 주세요.'}</span><button className="primary" type="submit"><Icon name="check" size={15}/>{record ? '실행 계획 저장' : '실행 계획에 담기'}</button></div>
+      <div className="plan-save-row"><span role="status">{message}</span><button className="primary" type="submit"><Icon name="check" size={15}/>{record ? '실행 계획 저장' : '실행 계획에 담기'}</button></div>
     </form>
     {record && onViewPlans && <button type="button" className="plan-view-link" onClick={() => onViewPlans(id)}>실행 계획 보기 <Icon name="arrow" size={15}/></button>}
   </section>
