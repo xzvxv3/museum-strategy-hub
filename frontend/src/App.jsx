@@ -41,7 +41,7 @@ function useResource(path, params = {}) {
 
 function ResourceState({ resource, children }) {
   if (resource.loading) return <div className="card data-state" role="status">데이터를 불러오고 있습니다…</div>
-  if (resource.error) return <div className="warning" role="alert"><strong>데이터를 불러오지 못했습니다.</strong><p>{resource.error}</p><p>백엔드 서버(8000)가 실행 중인지 확인해 주세요.</p><button className="outline" onClick={resource.retry}>다시 시도</button></div>
+  if (resource.error) return <div className="warning" role="alert"><strong>데이터를 불러오지 못했습니다.</strong><p>{resource.error}</p><button className="outline" onClick={resource.retry}>다시 시도</button></div>
   return children
 }
 
