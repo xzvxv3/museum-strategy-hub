@@ -17,14 +17,14 @@ export function WeekHourHeatmap({ items = [], audience = [], hourStart = 0, hour
     const row = cells.get(key)
     const prefix = `${days[day - 1]}요일 ${String(hour).padStart(2, '0')}시`
     if (hour < hourStart || hour > hourEnd) return `${prefix} · 선택 시간 범위 밖`
-    if (!row) return `${prefix} · 관측 행 없음`
+    if (!row) return `${prefix} · 데이터 없음 (0명과 다름)`
     return `${prefix} · ${number(row.population)}명 · 관측 ${row.observed_days}일 (${number(row.observed_rows)}행)`
   }
   const readout = active ? describe(active) : peak ? `최다 ${describe(`${peak.weekday}-${peak.hour}`)}` : '방문 인구가 없거나 관측 행이 없습니다.'
   const pickedCell = picked ? cells.get(picked) : null
   const detail = picked ? audience.filter(row => `${row.weekday}-${row.hour}` === picked) : []
   return <Card title="요일 × 시간대 방문 히트맵" className="heatmap-card">
-    <p className="card-sub">색이 진할수록 방문 규모가 큽니다.</p>
+    <p className="card-sub">색이 진할수록 방문 규모가 큽니다. 칸을 선택하면 집계값과 관측일 수를 확인할 수 있습니다.</p>
     <div className="heatmap-readout" aria-live="polite">{readout}</div>
     <div className="heatmap-scroll" tabIndex="0" role="region" aria-label="요일 시간대 히트맵 표, 작은 화면에서 좌우로 스크롤">
       <table className="heatmap-table"><caption className="sr-only">요일별 00~23시 방문 인구 합계. 각 칸을 선택하면 값을 확인할 수 있습니다.</caption>
@@ -36,11 +36,15 @@ export function WeekHourHeatmap({ items = [], audience = [], hourStart = 0, hour
           const value = Number(row?.population || 0)
           const isPeak = row && maximum > 0 && value === maximum
           const level = value > 0 ? Math.min(5, Math.max(1, Math.ceil(value / maximum * 5))) : 0
-          return <td key={hour}><button type="button" className={`heat-cell ${outside ? 'excluded' : !row ? 'missing' : `level-${level}`} ${isPeak ? 'is-peak' : ''} ${picked === key ? 'is-selected' : ''}`} aria-label={describe(key)} aria-pressed={picked === key} title={describe(key)} onMouseEnter={() => setActive(key)} onFocus={() => setActive(key)} onClick={() => { setActive(key); setPicked(key) }}>{outside ? '–' : !row ? '·' : value === 0 ? '0' : isPeak ? '★' : ''}</button></td>
+          return <td key={hour}><button type="button" className={`heat-cell ${outside ? 'excluded' : !row || value === 0 ? 'empty-value' : `level-${level}`} ${isPeak ? 'is-peak' : ''} ${picked === key ? 'is-selected' : ''}`} aria-label={describe(key)} aria-pressed={picked === key} title={describe(key)} onMouseEnter={() => setActive(key)} onFocus={() => setActive(key)} onClick={() => { setActive(key); setPicked(key) }}>{outside ? '×' : !row || value === 0 ? '' : isPeak ? '★' : ''}</button></td>
         })}</tr>)}</tbody>
       </table>
     </div>
-    <div className="heatmap-legend"><span>0명</span>{[0, 1, 2, 3, 4, 5].map(level => <i key={level} className={`level-${level}`}/>)}<span>{number(maximum)}명</span><span>★ 최다</span><span>· 관측 없음</span></div>
+    <div className="heatmap-legend"><span>적음</span>{[1, 2, 3, 4, 5].map(level => <i key={level} className={`level-${level}`} aria-hidden="true"/>)}<span>많음 · 최대 {number(maximum)}명</span><span>★ 최다</span></div>
+    <div className="heatmap-state-guide" aria-label="히트맵 기호 안내">
+      <span><b className="heat-key-empty" aria-hidden="true"/><span><strong>집계값이 0이거나 관측 데이터 없음</strong>칸을 선택하면 상세 정보에서 구분할 수 있습니다.</span></span>
+      <span><b className="heat-key-excluded">×</b><span><strong>분석 제외</strong>선택한 시간 범위 밖</span></span>
+    </div>
     {picked && <section className="heatmap-detail" aria-label="선택 시간대 상세"><div className="detail-heading"><div><span className="eyebrow">SELECTED SEGMENT</span><h3>{describe(picked)}</h3></div><button className="outline" onClick={() => { setPicked(null); setActive(null) }}>선택 해제</button></div>{pickedCell ? <><div className="detail-metrics"><div><span>방문 인구</span><strong>{number(pickedCell.population)}<small>명</small></strong></div><div><span>관측일 수</span><strong>{pickedCell.observed_days}<small>일</small></strong></div><div><span>선택 범위 내 비중</span><strong>{items.reduce((s, r) => s + Number(r.population), 0) > 0 ? (pickedCell.population / items.reduce((s, r) => s + Number(r.population), 0) * 100).toFixed(1) : '—'}<small>%</small></strong></div></div><Composition items={detail}/></> : <p className="definition-note">선택 시간 범위 밖이거나 관측 행이 없어 상세 구성을 표시할 수 없습니다.</p>}</section>}
   </Card>
 }
@@ -87,7 +91,7 @@ export function HourChart({ items }) {
   const total = items.reduce((s, r) => s + Number(r.population), 0)
   const byHour = new Map(items.map(r => [Number(r.category), r]))
   const selected = byHour.get(active)
-  return <Card title="시간대별 방문 집중도" className="hour-chart-card"><div className="chart-readout"><span><i/>방문 인구 <small>단위: 명</small></span><b>{selected ? `${String(active).padStart(2, '0')}시 · ${number(selected.population)}명` : active != null ? `${String(active).padStart(2, '0')}시 · 관측 행 없음` : '진한 막대: 최다 시간'}</b></div>
+  return <Card title="시간대별 방문 집중도" className="hour-chart-card"><div className="chart-readout"><span><i/>방문 인구 <small>단위: 명</small></span><b>{selected ? `${String(active).padStart(2, '0')}시 · ${number(selected.population)}명` : active != null ? `${String(active).padStart(2, '0')}시 · 데이터 없음 (0명과 다름)` : '진한 막대: 최다 시간'}</b></div>
     {!items.length ? <p className="empty">해당 조건의 관측 행이 없습니다.</p> : <><div className="hour-columns">{Array.from({ length: 24 }, (_, hour) => {
       const row = byHour.get(hour)
       const value = Number(row?.population || 0)
