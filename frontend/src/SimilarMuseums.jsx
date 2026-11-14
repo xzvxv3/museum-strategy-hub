@@ -29,7 +29,7 @@ function GroupResult({ data: res, facility }) {
   const groupName = g => isSelectedK ? res.groups.find(x => x.id === Number(g))?.name : `그룹 ${Number(g) + 1}`
 
   return <section className="cluster-page" aria-label="유사 박물관 그룹">
-    <div className="cluster-method-note"><p>실제 입장객이 아닌 시설 주변 감지 인구 기준입니다.</p><details className="cluster-method-details"><summary>분석 방법</summary><p>시설마다 방문 패턴 군집 비중, 주말·저녁·새벽 비중, 계절 변동, 성별·연령 비중, 교차방문 지표로 특징 벡터를 만들고 표준화한 뒤 Ward 계층 군집으로 비슷한 시설끼리 묶었습니다. 학습 범위(기간·연령·성별)는 연결된 1단계 실행을 따르며, 값은 실제 입장객이 아닌 <b>감지 인구</b> 기준입니다.</p></details></div>
+    <div className="cluster-method-note"><details className="cluster-method-details"><summary>분석 방법</summary><p>시설마다 방문 패턴 군집 비중, 주말·저녁·새벽 비중, 계절 변동, 성별·연령 비중, 교차방문 지표로 특징 벡터를 만들고 표준화한 뒤 Ward 계층 군집으로 비슷한 시설끼리 묶었습니다. 학습 범위(기간·연령·성별)는 연결된 1단계 실행을 따르며, 값은 실제 입장객이 아닌 <b>감지 인구</b> 기준입니다.</p></details></div>
 
     <div className="chart-grid">
       <Card title={facility ? `${facility}의 유사 박물관 그룹` : '선택 시설의 유사 박물관 그룹'}>
