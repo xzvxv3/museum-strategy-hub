@@ -419,3 +419,6 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 @media(max-width:380px){.analysis-hero{grid-template-columns:minmax(0,1fr) 70px;padding:14px}.analysis-hero h2{font-size:18px}.analysis-hero-art .mole-mascot{width:80px;height:80px}.analysis-hero-art>span{width:65px;height:65px}}
 
 .page-mascot-banner{width:100%;flex-shrink:0}.strategy-point-panel{margin:0 0 24px}.strategy-point-panel .strategy-hero-point{padding:18px 22px}.strategy-point-panel .strategy-hero-point strong{font-size:18px;margin:9px 0 6px}.execution-banner-actions{justify-content:flex-end;margin-bottom:18px}.ops-page>.page-mascot-banner{margin-top:0}.strategy-workspace>.page-mascot-banner{margin-top:0}
+
+.workspace-identity{display:flex;align-items:center;gap:10px;min-width:0;font-size:12px;font-weight:600;color:#49695d;overflow-wrap:anywhere;line-height:1.6}.workspace-identity svg{color:#6e8d7d}
+@media(max-width:600px){.workspace-identity{font-size:11px;gap:8px}}
