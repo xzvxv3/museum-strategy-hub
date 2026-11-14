@@ -208,7 +208,7 @@ function App() {
 
       {page === '데이터 분석' && <div className="tabs" role="tablist" aria-label="분석 종류">{tabs.map(label => <button key={label} role="tab" aria-selected={tab === label} className={tab === label ? 'selected' : ''} onClick={() => setTab(label)}>{label}</button>)}</div>}
       {page === '시설·방문 유형' && <>
-        <PageBanner eyebrow={typeTab === typeTabs[0] ? 'FIND THE PATTERN' : 'EXPLORE THE CONNECTION'} title={typeTab === typeTabs[0] ? <>방문의 패턴을 찾고,<br/>관객의 하루를 이해하세요.</> : <>닮은 박물관을 만나고,<br/>새로운 가능성을 발견하세요.</>} variant={typeTab === typeTabs[0] ? 'investigate' : 'explorer'} label="시설·방문 유형 소개"/>
+        <PageBanner eyebrow={typeTab === typeTabs[0] ? 'FIND THE PATTERN' : 'EXPLORE THE CONNECTION'} title={typeTab === typeTabs[0] ? <>방문의 패턴을 찾고,<br/>관객의 하루를 이해하세요.</> : <>닮은 박물관을 만나고,<br/>새로운 가능성을 발견하세요.</>} variant={typeTab === typeTabs[0] ? 'pattern' : 'explorer'} label="시설·방문 유형 소개"/>
         <div className="tabs" role="tablist" aria-label="시설·방문 유형 분석">{typeTabs.map(label => <button key={label} role="tab" aria-selected={typeTab === label} className={typeTab === label ? 'selected' : ''} onClick={() => setTypeTab(label)}>{label}</button>)}</div>
       </>}
       {page === '데이터 분석' && tab === tabs[2] ? <Relations filters={filters} metadata={metadata.data}/>
