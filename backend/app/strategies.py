@@ -31,16 +31,21 @@ def build_strategy_analysis(run, where, params, data, start, end, facility=None,
     night_share = sum(float(row['population']) for row in hours if row['category'] <= 5) / total if total else 0
     profile.update(top_three_hour_share=round(peak_share, 4), night_share=round(night_share, 4),
                    peak_hours=[row['category'] for row in top_three])
+    full_day_scope = params[0] == 0 and params[1] == 23
+    hour_scope_reason = (
+        f'시간 필터 {params[0]:02d}~{params[1]:02d}시가 적용되어 전체 하루의 시간 집중도 판정 제외'
+        if not full_day_scope else None
+    )
     hour_label = '·'.join(f"{row['category']:02d}시" for row in top_three)
     peak_safe = bool(hours and 6 <= hours[0]['category'] <= 21)
-    judge('hour_concentration', '시간대 운영', usable and peak_share >= .30 and peak_safe and night_share < .15,
-          f'상위 3시간 비중 {peak_share:.1%} / 기준 30% 이상; 관측 {observed}일',
+    judge('hour_concentration', '시간대 운영', usable and full_day_scope and peak_share >= .30 and peak_safe and night_share < .15,
+          hour_scope_reason or f'상위 3시간 비중 {peak_share:.1%} / 기준 30% 이상; 관측 {observed}일',
           {'title': f'{hour_label} 집중 수요에 맞춘 안내 배치',
            'evidence': f'{hour_label} 합계 비중 {peak_share:.1%} · 최다 {hours[0]["category"]:02d}시' if hours else '관측 없음',
            'action': f'{facility or "선택 범위"}의 방문이 집중된 {hour_label}에 안내·해설 인력을 배치하는 방안을 검토하세요. 실제 개관시간을 먼저 확인하고 다른 시간의 수요도 함께 점검하세요.',
            'metric': '상위 3시간 방문 비중과 시간대별 방문 규모'}, priority=2)
-    judge('night_scope', '집계 범위 점검', usable and night_share >= .15,
-          f'00~05시 비중 {night_share:.1%} / 기준 15% 이상',
+    judge('night_scope', '집계 범위 점검', usable and full_day_scope and night_share >= .15,
+          hour_scope_reason or f'00~05시 비중 {night_share:.1%} / 기준 15% 이상',
           {'title': '새벽 집계 범위 확인 후 운영 판단',
            'evidence': f'00~05시 집계 {night_share:.1%} · 방문 인구 합계 {total * night_share:.2f}명',
            'action': '새벽 집계가 실제 관람인지 주변 활동을 포함하는지 CSV만으로 확정할 수 없습니다. 집계 범위를 내부에서 검토하기 전 새벽 프로그램 운영으로 연결하지 마세요.',
