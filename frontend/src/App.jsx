@@ -12,6 +12,7 @@ import SimilarMuseums from './SimilarMuseums'
 import { downloadCsv, exportVisits } from './downloads'
 import FacilityCompare from './FacilityCompare'
 import Operations from './Operations'
+import Login from './Login'
 import './App.css'
 import './Operations.css'
 
@@ -166,7 +167,7 @@ function App() {
   const [chart, setChartValue] = useState(() => localStorage.getItem('culture-chart') || '선형')
   const [primary, setPrimary] = useState(() => (!localStorage.getItem('culture-primary') || localStorage.getItem('culture-primary') === '#416c50') ? '#176b68' : localStorage.getItem('culture-primary'))
   const [sidebar, setSidebar] = useState(() => (!localStorage.getItem('culture-sidebar') || localStorage.getItem('culture-sidebar') === '#243e32') ? '#163638' : localStorage.getItem('culture-sidebar'))
-  const [logged, setLogged] = useState(true), [loginError, setLoginError] = useState(''), [attempts, setAttempts] = useState(5)
+  const [logged, setLogged] = useState(false), [loginError, setLoginError] = useState(''), [attempts, setAttempts] = useState(5)
   const [modal, setModal] = useState(false), [toast, setToast] = useState('')
   const metadata = useResource('metadata'), dashboard = useResource('dashboard', filters), quality = useResource('quality')
   useEffect(() => { try { localStorage.setItem('culture-filters', JSON.stringify(filters)) } catch { /* Filters still work without storage. */ } }, [filters])
@@ -180,7 +181,21 @@ function App() {
   const style = { '--primary': primary, '--primary-text': luminance(primary) > .179 ? '#172536' : '#fff', '--sidebar': sidebar, '--side-text': lightSide ? '#294333' : '#f1f4e8', '--side-muted': lightSide ? '#6e8072' : '#b0c4b4', '--side-active': lightSide ? '#36553c10' : '#dcebc5' }
   const facility = filters.facility || '전체 시설'
   const range = `${filters.start_date || metadata.data?.visits.start_date || '—'} ~ ${filters.end_date || metadata.data?.visits.end_date || '—'}`
-  if (!logged) return <div className="login-page" style={style}><div className="login-brand"><h1>Culture+</h1><div className="mascot-halo"><Mascot variant="welcome"/></div><h1>데이터로 읽는<br/>박물관의 하루</h1></div><div className="login-form"><form onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); if (form.get('id') === 'abcd' && form.get('password') === '1234') { setLogged(true); setLoginError(''); if (form.get('remember')) localStorage.setItem('culture-id', 'abcd'); else localStorage.removeItem('culture-id'); navigate('홈') } else { setAttempts(x => Math.max(0, x - 1)); setLoginError('아이디 또는 비밀번호를 확인해 주세요.') } }}><h1>로그인</h1><label>아이디<input name="id" required defaultValue={localStorage.getItem('culture-id') || ''}/></label><label>비밀번호<input name="password" type="password" required/></label><label><input name="remember" type="checkbox"/>아이디 저장</label>{loginError && <p role="alert">{loginError} (남은 시도 {attempts}회)</p>}<button className="primary full" disabled={!attempts}>로그인</button><p className="demo-note">UI 체험 계정 abcd / 1234 · 실제 인증은 제공하지 않습니다.</p></form></div></div>
+  if (!logged) return <Login style={style} error={loginError} attempts={attempts} onLogin={e => {
+    e.preventDefault()
+    const form = new FormData(e.currentTarget)
+    if (form.get('id') === 'abcd' && form.get('password') === '1234') {
+      setLogged(true)
+      setLoginError('')
+      if (form.get('remember')) localStorage.setItem('culture-id', 'abcd')
+      else localStorage.removeItem('culture-id')
+      navigate('홈')
+    } else {
+      setAttempts(x => Math.max(0, x - 1))
+      setLoginError('아이디 또는 비밀번호를 확인해 주세요.')
+    }
+  }}/>
+
   return <div className="app" style={style}><aside className="sidebar"><a className="logo" onClick={() => navigate('홈')}><span className="brand-mascot"><Mascot/></span><span className="brand-wordmark">Culture<span>+</span></span></a><div className="institution facility-profile-card" title={facility}><div className="institution-icon"><Icon name="museum"/></div><div className="facility-profile-copy"><span className="facility-profile-caption">분석 중인 시설</span><b>{facility}</b><small className="facility-scope-badge"><i aria-hidden="true"/>{filters.facility ? '개별 시설' : `${metadata.data?.facilities.length || 17}개 시설 전체`}</small></div></div><nav>{[['홈', 'home'], ['데이터 분석', 'chart'], ['운영전략', 'bulb'], ['실행 계획', 'file'], ['시설 비교', 'museum'], ['행사 전후 분석', 'chart'], ['운영 캘린더', 'calendar']].map(([label, icon]) => <button key={label} className={page === label ? 'active' : ''} onClick={() => navigate(label)} aria-label={label}><Icon name={icon}/><span>{label}</span></button>)}</nav><div className="side-bottom"><button onClick={() => navigate('설정')} aria-label="설정"><Icon name="settings"/>설정</button><button aria-label="로그아웃" onClick={() => { setLogged(false); setAttempts(5); setLoginError('') }}><Icon name="logout"/>로그아웃</button></div><div className="side-footer">CULTURE + INSIGHT<br/><span>박물관의 내일을 위한 데이터</span></div></aside><div className="workspace"><header><span>{page}{page === '데이터 분석' && ` › ${tab}`}</span><div className="header-right"><div className="date"><Icon name="calendar" size={16}/>{['실행 계획', '운영 캘린더', '행사 전후 분석'].includes(page) ? '운영 기록 관리' : range}</div><div className="avatar"><Icon name="user"/></div></div></header><main><div className="page-heading"><div><span className="eyebrow">CULTURE+ / ANALYTICS</span><h1>{page === '홈' ? `${facility} 운영 대시보드` : page}</h1></div><div className={`heading-actions ${page === '홈' ? 'home-heading-actions' : ''}`}><button className={page === '홈' ? 'text-button home-data-guide' : 'outline'} onClick={() => setModal(true)}>데이터 기준 안내</button>{page === '데이터 분석' && (tab === tabs[0] || tab === tabs[1]) && <button className="outline" disabled={!dashboard.data} onClick={() => exportVisits(dashboard.data, filters)}>집계 CSV 다운로드</button>}{page === '운영전략' && <button className="primary" disabled={!dashboard.data} onClick={() => window.print()}>PDF 보고서 내보내기</button>}</div></div>
     {['운영 캘린더', '행사 전후 분석'].includes(page) ? <Operations view={page} metadata={metadata.data} onNavigate={navigate} onPlan={openPlans}/> : page === '시설 비교' ? <ResourceState resource={metadata}>{metadata.data && <FacilityCompare metadata={metadata.data} filters={filters} onChange={setFilters}/>}</ResourceState> : page === '실행 계획' ? <ExecutionPlans initialId={planToOpen} initialStatus={planStatus} initialFacility={planFacility} onExplore={() => navigate('운영전략')}/> : <ResourceState resource={metadata}>{metadata.data && <>{page === '홈' ? <HomeFilters value={filters} onChange={setFilters} metadata={metadata.data}/> : page !== '설정' && <Filters value={filters} onChange={setFilters} metadata={metadata.data}/>}{page === '설정' ? <Settings {...{ chart, setChart, primary, sidebar, setTheme, quality, notify }} metadata={metadata.data}/> : <>
             {page === '데이터 분석' && (
