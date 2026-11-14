@@ -422,3 +422,6 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 
 .workspace-identity{display:flex;align-items:center;gap:10px;min-width:0;font-size:12px;font-weight:600;color:#49695d;overflow-wrap:anywhere;line-height:1.6}.workspace-identity svg{color:#6e8d7d}
 @media(max-width:600px){.workspace-identity{font-size:11px;gap:8px}}
+
+.plan-tools .plan-create-button{padding:10px 14px;min-height:40px;font-size:12px;flex-shrink:0}
+@media(max-width:600px){.plan-tools .plan-create-button{flex-basis:100%;width:100%;min-height:43px;font-size:12px}}
