@@ -1,5 +1,7 @@
 # 행사 분석·운영 캘린더 두더지
 
+현재 표시 자산은 파란 모자·크림색 수염으로 통일했습니다. 색상 편집 프롬프트는 [BLUE_MASCOTS.md](BLUE_MASCOTS.md)를 참고하세요. 아래는 최초 생성 기록입니다.
+
 내장 image_gen 도구로 생성했습니다. 참조: `mole-investigate.png`. 기존 캐릭터를 유지한 투명 배경 PNG이며 페이지별 동작을 구분합니다.
 
 ## 행사 전후 분석: mole-event-review.png
