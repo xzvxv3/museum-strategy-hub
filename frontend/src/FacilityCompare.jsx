@@ -1,3 +1,4 @@
+import PageBanner from './PageBanner'
 import { useState } from 'react'
 import { operatorProfile } from './operatorProfile.js'
 import { Card } from './ui'
@@ -58,7 +59,7 @@ export default function FacilityCompare({ metadata, filters, onChange }) {
     return [base, ...facilities.filter(f => f !== base)].slice(0, Math.min(3, facilities.length))
   })
   return <div className="ops-page">
-    <div className="ops-intro"><span className="eyebrow">FACILITY BENCHMARK</span><h2>다른 시설과 나란히, 우리 관객의 특성 찾기</h2><p>규모·관객 구성·시간대 패턴을 동일한 기간과 관객 조건으로 비교합니다.</p></div>
+    <PageBanner eyebrow="FACILITY BENCHMARK" title={<>다른 시설과 나란히,<br/>우리 관객의 특성을 찾으세요.</>} variant="explorer" label="시설 비교 소개"/>
     <Card title="공통 비교 조건"><div className="ops-form-grid">
       <div className="ops-span-2"><DateRangePicker start={filters.start_date} end={filters.end_date} min={metadata.visits.start_date} max={metadata.visits.end_date} onChange={(start, end) => onChange({ ...filters, start_date: start, end_date: end })}/></div>
       <label className="ops-field">연령<select value={filters.age} onChange={e => onChange({ ...filters, age: e.target.value })}><option value="">20·30대 전체</option><option>20대</option><option>30대</option></select></label>
