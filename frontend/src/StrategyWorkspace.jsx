@@ -25,14 +25,14 @@ function Evidence({ strategy, data }) {
   return <Card title={period ? '기간별 관측일 평균 방문 인구' : '동일 길이 기간의 방문 규모 비교'}><div className="period-comparison">{values.map((row, i) => <div key={row.label}><div className="comparison-column"><span style={{ height: `${row.population / max * 100}%`, background: i ? 'var(--primary)' : '#a7c2b7' }}/></div><b>{fmt(row.population)}명</b><span>{row.label}</span><small>{row.start_date} ~ {row.end_date}{row.observed_days != null && ` · 관측 ${row.observed_days}일`}</small></div>)}</div></Card>
 }
 
-function FacilityProfile({ data, facility }) {
+function FacilityProfile({ data, facility, filters }) {
   const profile = data.facility_profile
   if (!profile) return null
   const recent = profile.recent_comparison
   return <section className="facility-profile" aria-label="시설별 방문 특성"><div className="facility-profile-heading"><h3>{facility || '전체 시설'}의 방문 특성</h3><span>관측 {profile.observed_days}일</span></div><div className="facility-profile-metrics">{[
     ['주말 / 평일 평균', profile.weekend_to_weekday_ratio == null ? '—' : `${profile.weekend_to_weekday_ratio.toFixed(2)}배`],
     ['상위 3시간 비중', `${(profile.top_three_hour_share * 100).toFixed(1)}%`],
-    [profile.top_audience, `${(profile.top_audience_share * 100).toFixed(1)}%`],
+    [filters.age || filters.sex ? '관객 집중도 판정' : profile.top_audience, filters.age || filters.sex ? '관객 필터로 제외' : `${(profile.top_audience_share * 100).toFixed(1)}%`],
     [`${recent.items[1]?.label || '비교 기간'} 평균 변화`, recent.change_percent == null ? '—' : `${recent.change_percent > 0 ? '+' : ''}${recent.change_percent.toFixed(1)}%`],
   ].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><details className="strategy-diagnostics"><summary>전략 판정 근거 보기</summary><p>운영 검토를 위한 규칙 기준입니다. 통계적 유의성이나 기대 효과를 뜻하지 않습니다.</p>{data.strategy_diagnostics.map(rule => <div key={rule.code}><span className={rule.matched ? 'matched' : ''}>{rule.matched ? '제안' : '보류'}</span><b>{rule.goal}</b><p>{rule.reason}</p></div>)}</details></section>
 }
@@ -54,7 +54,7 @@ export default function StrategyWorkspace({ data, filters, onViewPlans }) {
   const insufficient = data.facility_profile && !data.facility_profile.supported
   return <div className="strategy-workspace">
     <section className="strategy-hero"><div className="strategy-hero-copy"><span className="eyebrow">FROM INSIGHT TO ACTION</span><h2>데이터를 읽고,<br/>다음 운영을 설계하세요.</h2><p>전략을 선택하면 근거 차트와 실행 단계를 함께 볼 수 있습니다.</p></div><div className="strategy-hero-point"><span><Icon name="bulb" size={17}/>이번 기간의 운영 포인트</span><strong>{peak ? peak.title : insufficient ? '분석 범위를 넓혀 확인해 주세요' : data.summary.population > 0 ? '현재 방문 패턴 유지·관찰' : '분석할 방문 인구가 없습니다'}</strong><p>{peak ? evidenceText(peak.evidence) : insufficient ? '관측일과 분석 기간이 충분하지 않아 운영 패턴을 확정하지 않았습니다.' : data.summary.population > 0 ? '운영 조정 기준을 넘는 신호가 없어 전략을 일괄 생성하지 않았습니다.' : '시설·분석 기간·관객 조건을 변경해 보세요.'}</p></div></section>
-    <FacilityProfile data={data} facility={filters.facility}/>
+    <FacilityProfile data={data} facility={filters.facility} filters={filters}/>
     <div className="strategy-category-tabs" role="group" aria-label="전략 분류">{['전체', ...Object.keys(categories)].map(value => <button key={value} aria-pressed={category === value} className={category === value ? 'selected' : ''} onClick={() => { setCategory(value); setSelectedGoal(null) }}>{value}<span>{items.filter(row => value === '전체' || categories[value].includes(row.goal)).length}</span></button>)}</div>
     {items.length ? <div className="strategy-workbench"><aside className="strategy-picker" aria-label="운영 전략 선택"><div className="strategy-list-heading"><h3>검토할 전략</h3><span>{visible.length}개</span></div>{visible.map((strategy, index) => <button key={strategy.goal} className={`strategy-select-card ${selected.goal === strategy.goal ? 'selected' : ''}`} aria-pressed={selected.goal === strategy.goal} onClick={() => setSelectedGoal(strategy.goal)}><span className="strategy-select-top"><span className="strategy-select-icon"><Icon name={icons[strategy.goal]} size={21}/></span><small>0{index + 1} / {strategy.goal}</small><Icon name="arrow" size={16}/></span><strong>{strategy.title}</strong><p>{evidenceText(strategy.evidence)}</p><span className="strategy-select-bottom">근거와 실행 계획 보기 <span>→</span></span></button>)}<p className="strategy-picker-note">전략 순서는 검토 항목의 분류이며 효과나 성공 확률의 순위가 아닙니다.</p></aside>
       {selected ? <section className="strategy-detail" aria-label="선택 전략 상세" key={id}><div className="strategy-detail-heading"><span className="eyebrow">{selected.goal}</span><h2>{selected.title}</h2><p>{scopeLabel(scope)}</p></div><div className="strategy-evidence"><span>근거 데이터</span><strong>{evidenceText(selected.evidence)}</strong></div><Evidence strategy={selected} data={data}/><div className="strategy-action-copy"><h3><Icon name="bulb" size={16}/>실행 방향</h3><p>{selected.action}</p><div><span>점검할 지표</span><b>{selected.metric}</b></div></div><PlanEditor {...{ id, scope }} strategy={selected} record={plans[id]} onSave={save} onViewPlans={onViewPlans}/></section> : <div className="card empty">현재 조건에 해당하는 분류의 전략이 없습니다. 다른 분류를 선택하거나 시설·기간을 변경해 주세요.</div>}
