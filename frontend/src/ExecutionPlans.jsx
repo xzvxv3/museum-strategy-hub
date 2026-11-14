@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Icon } from './ui'
+import { Icon, Mascot } from './ui'
 import { downloadFile } from './downloads'
 import PlanEditor from './PlanEditor'
 import { readPlans, storageKey, scopeLabel, status, parseBackup } from './planStore'
@@ -42,6 +42,15 @@ export default function ExecutionPlans({ initialId, initialStatus = '전체', in
     {facility && <div className="execution-scope-chip"><Icon name="museum" size={15}/>{facility}<button onClick={() => { setFacility(''); setOpened(null) }}>전체 시설 보기</button></div>}
     <div className="plan-filter-tabs" role="group" aria-label="실행 계획 상태 필터">{['전체', '준비', '진행 중', '완료'].map(value => <button type="button" aria-pressed={filter === value} className={filter === value ? 'selected' : ''} key={value} onClick={() => { setFilter(value); setOpened(null); setNotice('') }}><span>{value}</span><b>{scoped.filter(([, plan]) => value === '전체' || status(plan.checks) === value).length}</b></button>)}</div>
     
+          {filter === '완료' && visible.length > 0 && (
+        <div className="success-mascot-guide">
+          <Mascot variant="success" />
+          <div>
+            <strong>실행 계획을 완료했어요!</strong>
+            <p>완료한 계획을 확인하고 다음 운영 개선을 준비해 보세요.</p>
+          </div>
+        </div>
+      )}
     {notice && <p className="plan-notice" role="status">{notice}</p>}
     {visible.length ? <div className="execution-layout"><div className="execution-plan-list">{visible.map(([id, plan]) => {
       const completed = plan.checks.filter(Boolean).length

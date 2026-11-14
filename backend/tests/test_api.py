@@ -90,7 +90,8 @@ def test_dashboard_consistent_totals_and_comparison(client):
     assert comparison['start_date'] == '2025-03-31'
     assert comparison['population'] == expected['population']
     assert comparison['change_percent'] == round((float(total) / expected['population'] - 1) * 100, 2)
-    assert {'시간대 운영', '방문 규모 점검'} == {r['goal'] for r in data['strategies']}
+    assert '방문 규모 점검' in {r['goal'] for r in data['strategies']}
+    assert '시간대 운영' not in {r['goal'] for r in data['strategies']}
     assert len(data['strategy_diagnostics']) == 7
 
 
@@ -181,3 +182,24 @@ def test_weekday_and_relation_evidence_matches_source(client):
         expected = sum(Decimal(r['VIST_POPL_CNT']) for r in relations if r['TRGT_RLTV_FACL_NM'] == item['label'])
         assert Decimal(str(item['population'])) == expected
     assert goals['시설 연계']['chart']['start_month'] == '2025-01'
+
+
+def test_partial_hour_filter_does_not_infer_full_day_time_concentration(client):
+    params = {'facility': '농업박물관', 'hour_start': 9, 'hour_end': 11}
+    response = client.get('/api/dashboard', params=params)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['summary']['population'] > 0
+
+    goals = {item['goal'] for item in data['strategies']}
+    assert '시간대 운영' not in goals
+    assert '집계 범위 점검' not in goals
+
+    diagnostics = {item['code']: item for item in data['strategy_diagnostics']}
+    for code in ('hour_concentration', 'night_scope'):
+        assert diagnostics[code]['matched'] is False
+        assert '전체 하루의 시간 집중도 판정 제외' in diagnostics[code]['reason']
+
+    full_day = client.get('/api/dashboard', params={'facility': '농업박물관'}).json()
+    full_day_diagnostics = {item['code']: item for item in full_day['strategy_diagnostics']}
+    assert '시간 필터' not in full_day_diagnostics['hour_concentration']['reason']

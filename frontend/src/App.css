@@ -339,3 +339,43 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 @media(max-width:600px){.plan-tools{padding:14px;gap:10px}.plan-tools>label{width:100%;min-width:0}.plan-tools button{flex:1;font-size:11px}.sidebar nav button span{font-size:9px}.sidebar nav{gap:10px}.card-sub,.stat-support{font-size:12px}}
 @media print{.print-memo{display:block!important;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.8;padding:12px;border:1px solid #dce5df}.plan-editor textarea,.plan-tools,.plan-detail-actions,.data-guide-dialog{display:none!important}.plan-editor,.execution-detail{break-inside:auto}.plan-save-row,.plan-view-link{display:none!important}}
 @media(max-width:600px){.execution-page-heading h2{font-size:20px;line-height:1.65;word-break:keep-all}.plan-tools .outline{white-space:normal;text-align:center}}
+/* 데이터 분석 및 실행 계획 마스코트 */
+.analysis-mascot-guide,
+.success-mascot-guide {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  margin: 16px 0;
+  background: #f4f8f2;
+  border: 1px solid #e1e9df;
+  border-radius: 12px;
+}
+
+.analysis-mascot-guide .mole-mascot,
+.success-mascot-guide .mole-mascot {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.analysis-mascot-guide strong,
+.success-mascot-guide strong {
+  font-size: 14px;
+}
+
+.analysis-mascot-guide p,
+.success-mascot-guide p {
+  font-size: 12px;
+  margin-top: 6px;
+  color: #718076;
+}
+
+@media (max-width: 600px) {
+  .analysis-mascot-guide .mole-mascot,
+  .success-mascot-guide .mole-mascot {
+    width: 64px;
+    height: 64px;
+  }
+}
