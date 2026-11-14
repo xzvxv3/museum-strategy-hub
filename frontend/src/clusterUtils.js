@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getApi, postApi } from './api'
 
 // Cluster / group colors stay fixed so the same id reads the same in every chart.
@@ -16,31 +16,50 @@ export function scopeLabel(filters, metadata) {
   return `${start} ~ ${end} · ${filters.age || '20·30대 전체'} · ${sexLabel[filters.sex] || '전체 성별'}`
 }
 
-/** Stored result for the filter scope (GET) plus an explicit run (POST) when none exists yet. */
+// Reuse ongoing training across tab remounts and facility-only filter changes.
+const pendingRuns = new Map()
+function train(stage, params) {
+  const training = { ...params }
+  delete training.facility
+  const key = JSON.stringify([stage, training])
+  if (!pendingRuns.has(key)) {
+    const promise = postApi(`clustering/stage${stage}/run`, training)
+      .finally(() => pendingRuns.delete(key))
+    pendingRuns.set(key, promise)
+  }
+  return pendingRuns.get(key)
+}
+
+/** Both stages start automatically when no saved result exists. */
 export function useClusterResult(stage, filters) {
   const key = JSON.stringify({ start_date: filters.start_date, end_date: filters.end_date, sex: filters.sex, age: filters.age, facility: filters.facility })
-  const latest = useRef(key)
-  const [state, setState] = useState({ key: '', data: null, error: '' })
-  const [running, setRunning] = useState('')
+  const [state, setState] = useState({ requestKey: '', data: null, error: '', running: false })
   const [attempt, setAttempt] = useState(0)
+  const requestKey = JSON.stringify([stage, key, attempt])
   useEffect(() => {
-    latest.current = key
     const controller = new AbortController()
-    getApi(`clustering/stage${stage}`, JSON.parse(key), controller.signal)
-      .then(data => { if (!controller.signal.aborted) setState({ key, data, error: '' }) })
-      .catch(error => { if (!controller.signal.aborted) setState({ key, data: null, error: error.message }) })
-    return () => controller.abort()
-  }, [stage, key, attempt])
-  // A run started under other filters must not overwrite the current scope's state.
-  const run = () => {
-    const runKey = key
-    setRunning(runKey)
-    postApi(`clustering/stage${stage}/run`, JSON.parse(runKey))
-      .then(data => { if (latest.current === runKey) setState({ key: runKey, data, error: '' }) })
-      .catch(error => { if (latest.current === runKey) setState({ key: runKey, data: null, error: error.message }) })
-      .finally(() => setRunning(current => current === runKey ? '' : current))
-  }
-  const current = state.key === key
-  return { data: current ? state.data : null, error: current ? state.error : '', loading: !current, running: running === key,
-    run, retry: () => setAttempt(x => x + 1) }
+    const params = JSON.parse(key)
+    const timer = setTimeout(async () => {
+      try {
+        let data = await getApi(`clustering/stage${stage}`, params, controller.signal)
+        if (controller.signal.aborted) return
+        if (!data.available) {
+          setState({ requestKey, data: null, error: '', running: true })
+          await train(stage, params)
+          if (controller.signal.aborted) return
+          // Fetch the view for the latest facility without retraining for that facility.
+          data = await getApi(`clustering/stage${stage}`, params, controller.signal)
+        }
+        if (!controller.signal.aborted) setState({ requestKey, data, error: '', running: false })
+      } catch (error) {
+        if (!controller.signal.aborted) setState({ requestKey, data: null, error: error.message, running: false })
+      }
+    }, 500)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [stage, key, requestKey])
+  const current = state.requestKey === requestKey
+  return { data: current ? state.data : null, error: current ? state.error : '', loading: !current,
+    running: current && state.running,
+    run: () => setAttempt(x => x + 1),
+    retry: () => setAttempt(x => x + 1) }
 }

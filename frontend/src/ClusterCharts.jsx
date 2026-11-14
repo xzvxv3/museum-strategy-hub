@@ -6,7 +6,7 @@ import './Cluster.css'
 const prefixSums = values => values.map((_, i) => values.slice(0, i).reduce((s, v) => s + (v || 0), 0))
 
 export function ClusterGate({ resource, title, scope, runNote, children }) {
-  if (resource.running) return <div className="card data-state" role="status">군집 분석을 실행하고 있습니다… {runNote}</div>
+  if (resource.running) return <div className="card data-state" role="status">군집 분석을 실행하고 있습니다… 처음 분석은 {runNote} 결과는 저장되어 다음부터 바로 표시됩니다.</div>
   if (resource.loading) return <div className="card data-state" role="status">군집 분석 결과를 불러오고 있습니다…</div>
   if (resource.error) return <div className="warning" role="alert"><strong>군집 분석 결과를 가져오지 못했습니다.</strong><p>{resource.error}</p><p>조건을 넓히거나 백엔드 서버(8000)가 실행 중인지 확인해 주세요.</p><button className="outline" onClick={resource.retry}>다시 시도</button></div>
   if (!resource.data.available) return <Card title={title} className="cluster-run-card">
