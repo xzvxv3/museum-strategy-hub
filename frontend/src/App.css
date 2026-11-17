@@ -433,3 +433,38 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 
 .sidebar .side-bottom{border-top:1px solid color-mix(in srgb,var(--side-muted) 24%,transparent);padding-top:18px;margin-top:auto;gap:7px}
 @media(max-width:900px){.sidebar .side-bottom{padding-top:14px}}
+
+/* Strategy → action plan: concise orientation aligned with existing Museum Flow palette. */
+.workflow-guide{display:grid;gap:14px;margin:0 0 22px;padding:20px 22px;border:1px solid #dfe9e2;border-radius:13px;background:#fff}
+.workflow-guide-title{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 20px}
+.workflow-guide-title strong{font-size:15px;color:#2e5045;font-weight:650}
+.workflow-guide-title>span{font-size:12px;color:#718477}
+.workflow-guide-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0;margin:0;list-style:none}
+.workflow-guide-steps li{display:flex;align-items:center;min-width:0;gap:11px;padding:12px;border:1px solid #e5eee7;border-radius:10px;background:#f8fbf8}
+.workflow-guide-steps li>span{display:grid;place-items:center;width:31px;height:31px;flex-shrink:0;border-radius:9px;background:#e4efe8;color:#326656;font-size:12px;font-weight:700}
+.workflow-guide-steps li div{display:grid;min-width:0;gap:4px}
+.workflow-guide-steps li strong{font-size:12px;color:#315446}
+.workflow-guide-steps li small{font-size:11px;line-height:1.5;color:#718477}
+.execution-overview{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:0 0 18px;padding:18px 21px;border:1px solid #dfe9e2;border-radius:12px;background:#fff}
+.execution-overview strong{font-size:14px;color:#315446}
+.execution-overview p{margin-top:5px;font-size:12px;line-height:1.6;color:#718477}
+.execution-overview button{flex-shrink:0;min-height:40px;font-size:12px}
+.execution-placeholder-help{max-width:360px;margin:10px auto 0;font-size:12px;line-height:1.8;color:#718477;text-align:center}
+.plan-workflow-hint{margin:12px 0 14px;padding:10px 13px;border-left:3px solid #73a28a;border-radius:0 7px 7px 0;background:#f3f8f4;font-size:12px;line-height:1.7;color:#536d5e}
+@media(max-width:700px){.workflow-guide{padding:16px}.workflow-guide-steps{grid-template-columns:1fr}.execution-overview{flex-direction:column;align-items:stretch;padding:16px}.execution-overview button{width:100%}}
+
+/* Culture+ final plan UX refinement - 2026-11 */
+.plan-execution-checklist{margin:20px 0 18px;padding:16px 17px;border:1px solid #dce8de;border-radius:12px;background:#fafcf9}
+.plan-section-heading{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:7px 16px;margin-bottom:12px}
+.plan-section-heading strong{font-size:14px;font-weight:650;color:#315446}
+.plan-section-heading span{font-size:12px;line-height:1.6;color:#73867b}
+.plan-execution-checklist .plan-progress{margin:13px 0 15px}
+.plan-ready-to-finish{margin:13px 0;padding:13px 16px;background:#edf5ef;border:1px solid #d3e3d5;border-radius:9px;font-size:12px;line-height:1.7;color:#315e4b}
+.plan-outcome-summary{margin:16px 0 20px;padding:19px 21px;background:#f1f8f3;border:1px solid #d4e7d8;border-radius:12px}
+.plan-outcome-summary-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.plan-outcome-summary-heading>span{display:inline-flex;padding:5px 9px;border-radius:20px;background:#dbeee1;color:#2f6852;font-size:11px;font-weight:650}
+.plan-outcome-summary-heading strong{font-size:14px;color:#315446}
+.plan-outcome-summary p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:13px;color:#345347}
+.plan-outcome-summary small{display:block;margin-top:12px;font-size:11px;line-height:1.7;color:#73877b}
+@media(max-width:600px){.plan-execution-checklist{padding:13px}.plan-outcome-summary{padding:15px}.plan-section-heading{display:grid;gap:5px}}
+@media print{.plan-outcome-summary,.plan-execution-checklist{break-inside:avoid}}

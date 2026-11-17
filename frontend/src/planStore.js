@@ -10,7 +10,7 @@ export const steps = {
   '집계 범위 점검': ['새벽 집계의 시간·관객 분포 확인', '집계 범위와 실제 운영시간 내부 검토', '관람과 주변 활동을 구분할 수 있는지 점검', '점검 결과를 기록한 뒤 운영 전략 재검토'],
 }
 export const scopeLabel = scope => `${scope.facility || '전체 시설'} · ${scope.start_date} ~ ${scope.end_date} · ${scope.age || '20·30대'} · ${scope.sex === 'F' ? '여성' : scope.sex === 'M' ? '남성' : '전체 성별'}`
-export const status = checks => checks.every(Boolean) ? '완료' : checks.some(Boolean) ? '진행 중' : '준비'
+export const status = (checks, workflowStatus) => ['준비', '진행 중', '완료'].includes(workflowStatus) ? workflowStatus : checks.every(Boolean) ? '완료' : checks.some(Boolean) ? '진행 중' : '준비'
 
 export function readPlans() {
   try {
@@ -23,7 +23,7 @@ export function readPlans() {
 
 export function validatePlan(plan) {
   const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
-  return plan && typeof plan === 'object' && typeof plan.strategy?.title === 'string' && plan.strategy.title.length <= 500 && Object.hasOwn(steps, plan.strategy.goal) && typeof plan.strategy.action === 'string' && plan.strategy.action.length <= 10000 && typeof plan.scope?.facility === 'string' && date(plan.scope.start_date) && date(plan.scope.end_date) && plan.scope.start_date <= plan.scope.end_date && ['', '20대', '30대'].includes(plan.scope.age) && ['', 'F', 'M'].includes(plan.scope.sex) && typeof plan.owner === 'string' && plan.owner.length <= 80 && typeof plan.memo === 'string' && plan.memo.length <= 2000 && (plan.due === '' || date(plan.due)) && Array.isArray(plan.checks) && plan.checks.length === 4 && plan.checks.every(value => typeof value === 'boolean') && typeof plan.updated_at === 'string' && !Number.isNaN(Date.parse(plan.updated_at)) && (plan.archived === undefined || typeof plan.archived === 'boolean')
+  return plan && typeof plan === 'object' && typeof plan.strategy?.title === 'string' && plan.strategy.title.length <= 500 && Object.hasOwn(steps, plan.strategy.goal) && typeof plan.strategy.action === 'string' && plan.strategy.action.length <= 10000 && typeof plan.scope?.facility === 'string' && date(plan.scope.start_date) && date(plan.scope.end_date) && plan.scope.start_date <= plan.scope.end_date && ['', '20대', '30대'].includes(plan.scope.age) && ['', 'F', 'M'].includes(plan.scope.sex) && typeof plan.owner === 'string' && plan.owner.length <= 80 && typeof plan.memo === 'string' && plan.memo.length <= 2000 && (plan.purpose === undefined || (typeof plan.purpose === 'string' && plan.purpose.length <= 500)) && (plan.successCriteria === undefined || (typeof plan.successCriteria === 'string' && plan.successCriteria.length <= 500)) && (plan.due === '' || date(plan.due)) && Array.isArray(plan.checks) && plan.checks.length === 4 && plan.checks.every(value => typeof value === 'boolean') && typeof plan.updated_at === 'string' && !Number.isNaN(Date.parse(plan.updated_at)) && (plan.workflowStatus === undefined || ['준비', '진행 중', '완료'].includes(plan.workflowStatus)) && (plan.outcome === undefined || (typeof plan.outcome === 'string' && plan.outcome.length <= 2000)) && (plan.archived === undefined || typeof plan.archived === 'boolean')
 }
 
 export function parseBackup(text) {
