@@ -36,6 +36,7 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
     setMessage(saved ? '실행 계획을 이 브라우저에 저장했습니다.' : '저장 공간에 접근하지 못했습니다. 브라우저 설정을 확인해 주세요.')
   }
   return <section className="plan-editor" aria-label="실행 계획 편집"><div className="plan-editor-heading"><div><span className="eyebrow">ACTION PLAN</span><h3>{record ? '실행 계획 편집' : '실행 계획 만들기'}</h3></div><span className={`plan-status ${count === 4 ? 'complete' : ''}`}>{status(checks, workflowStatus)} · {count}/4</span></div>
+    <p className="plan-workflow-hint">체크리스트는 실행 진행 상황을 기록하는 용도예요. 상태 전환과 완료는 아래 실행 관리 버튼에서 확정하세요.</p>
     <div className="plan-progress" role="progressbar" aria-label="실행 단계 진행률" aria-valuenow={count} aria-valuemin={0} aria-valuemax={4}><span style={{ width: `${count / 4 * 100}%` }}/></div>
     <div className="execution-steps">{(steps[strategy.goal] || steps['방문 규모 점검']).map((step, index) => <label key={step} className={checks[index] ? 'checked' : ''}><input type="checkbox" checked={checks[index]} onChange={() => { setChecks(checks.map((value, i) => i === index ? !value : value)); dirty() }}/><span className="step-order">{String(index + 1).padStart(2, '0')}</span><span>{step}</span></label>)}</div>
     <form onSubmit={event => { event.preventDefault(); persist(workflowStatus) }}>
