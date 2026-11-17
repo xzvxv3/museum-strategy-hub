@@ -36,15 +36,19 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
     setMessage(saved ? '실행 계획을 이 브라우저에 저장했습니다.' : '저장 공간에 접근하지 못했습니다. 브라우저 설정을 확인해 주세요.')
   }
   return <section className="plan-editor" aria-label="실행 계획 편집"><div className="plan-editor-heading"><div><span className="eyebrow">ACTION PLAN</span><h3>{record ? '실행 계획 편집' : '실행 계획 만들기'}</h3></div><span className={`plan-status ${count === 4 ? 'complete' : ''}`}>{status(checks, workflowStatus)} · {count}/4</span></div>
-    <p className="plan-workflow-hint">체크리스트는 실행 진행 상황을 기록하는 용도예요. 상태 전환과 완료는 아래 실행 관리 버튼에서 확정하세요.</p>
-    <div className="plan-progress" role="progressbar" aria-label="실행 단계 진행률" aria-valuenow={count} aria-valuemin={0} aria-valuemax={4}><span style={{ width: `${count / 4 * 100}%` }}/></div>
-    <div className="execution-steps">{(steps[strategy.goal] || steps['방문 규모 점검']).map((step, index) => <label key={step} className={checks[index] ? 'checked' : ''}><input type="checkbox" checked={checks[index]} onChange={() => { setChecks(checks.map((value, i) => i === index ? !value : value)); dirty() }}/><span className="step-order">{String(index + 1).padStart(2, '0')}</span><span>{step}</span></label>)}</div>
     <form onSubmit={event => { event.preventDefault(); persist(workflowStatus) }}>
       <div className="plan-fields"><label>담당자<input name="plan_owner" value={owner} maxLength={80} placeholder="예: 전시운영팀" onChange={event => { setOwner(event.target.value); dirty() }}/></label><label>목표일<input name="plan_due" type="date" value={due} onChange={event => { setDue(event.target.value); dirty() }}/></label></div>
       <div className="plan-intent-fields">
         <label>실행 목적<textarea name="plan_purpose" value={purpose} maxLength={500} rows={2} placeholder="예: 평일 해설 프로그램의 방문 수요를 확인한다" onChange={event => { setPurpose(event.target.value); dirty() }}/></label>
         <label>완료 및 성과 판단 기준<textarea name="plan_criteria" value={successCriteria} maxLength={500} rows={2} placeholder="예: 시범 운영 후 방문 인구와 현장 의견을 기록한다" onChange={event => { setSuccessCriteria(event.target.value); dirty() }}/></label>
       </div>
+      <section className="plan-execution-checklist" aria-label="실행 체크리스트">
+        <div className="plan-section-heading"><strong>실행 항목 확인</strong><span>목적과 완료 기준을 정한 뒤 항목별 진행 상황을 기록하세요.</span></div>
+        <p className="plan-workflow-hint">체크리스트는 실행 진행 상황을 기록하는 용도예요. 상태 전환과 완료는 아래 실행 관리 버튼에서 확정하세요.</p>
+    <div className="plan-progress" role="progressbar" aria-label="실행 단계 진행률" aria-valuenow={count} aria-valuemin={0} aria-valuemax={4}><span style={{ width: `${count / 4 * 100}%` }}/></div>
+    <div className="execution-steps">{(steps[strategy.goal] || steps['방문 규모 점검']).map((step, index) => <label key={step} className={checks[index] ? 'checked' : ''}><input type="checkbox" checked={checks[index]} onChange={() => { setChecks(checks.map((value, i) => i === index ? !value : value)); dirty() }}/><span className="step-order">{String(index + 1).padStart(2, '0')}</span><span>{step}</span></label>)}</div>
+      </section>
+    {workflowStatus === '진행 중' && count === 4 && <p className="plan-ready-to-finish" role="status">실행 항목 4개를 모두 확인했습니다. 실행 결과를 기록하고 아래 '계획 완료' 버튼을 눌러 마무리하세요.</p>}
       <label>실행 메모<textarea name="plan_memo" value={memo} maxLength={2000} rows={3} placeholder="실행 방법과 점검할 내용을 적어보세요." onChange={event => { setMemo(event.target.value); dirty() }}/><span className="print-memo">{memo || '—'}</span></label>
       {(workflowStatus === '진행 중' || workflowStatus === '완료') && <label>실행 결과 및 관찰 사항<textarea name="plan_outcome" value={outcome} maxLength={2000} rows={3} placeholder="예: 평일 해설을 2회 운영했고 방문 인구 추이를 검토했다. 효과의 인과관계는 확인되지 않았다." onChange={event => { setOutcome(event.target.value); dirty() }}/></label>}
       <div className="plan-save-row"><span role="status">{message}</span><button className="primary" type="submit"><Icon name="check" size={15}/>{record ? '실행 계획 저장' : '실행 계획에 담기'}</button></div>
