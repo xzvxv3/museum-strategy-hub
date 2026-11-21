@@ -8,6 +8,11 @@ export const num = (v, digits = 0) => v == null || Number.isNaN(Number(v)) ? '�
 export const pct = (v, digits = 1) => v == null || Number.isNaN(Number(v)) ? '—' : `${(v * 100).toFixed(digits)}%`
 export const pp = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%p`
 export const ymLabel = ym => `${Math.floor(ym / 100)}.${String(ym % 100).padStart(2, '0')}`
+/** Attach a Korean particle by the final consonant: josa('농업박물관', '과', '와') → '농업박물관과'. */
+export const josa = (word, withFinal, withoutFinal) => {
+  const code = word.charCodeAt(word.length - 1) - 0xAC00
+  return word + (code >= 0 && code <= 11171 && code % 28 ? withFinal : withoutFinal)
+}
 const sexLabel = { F: '여성', M: '남성' }
 
 export function scopeLabel(filters, metadata) {
