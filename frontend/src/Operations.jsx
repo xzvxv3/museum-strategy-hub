@@ -7,6 +7,7 @@ import { readPlans, status } from './planStore'
 import { dateString, readEvents, writeEvents, validateEvent, eventKey, readDraft, storeDraft, clearDraft, overlappingEvents } from './eventStore'
 import { downloadCsv } from './downloads'
 import useAnalysis from './useAnalysis'
+import EventDemo from './EventDemo'
 
 const fmt = v => v == null ? '—' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 1 })
 const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${fmt(v)}%`
@@ -89,6 +90,7 @@ function Calendar({ events, plans, month, setMonth, selectedDay, setSelectedDay,
   </>
 }
 export default function Operations({ view, metadata, onNavigate, onPlan }) {
+  const [eventDemoMode, setEventDemoMode] = useState(false)
   const [initial] = useState(load)
   const [events, setEvents] = useState(initial.items)
   const [message, setMessage] = useState('')
@@ -133,12 +135,19 @@ export default function Operations({ view, metadata, onNavigate, onPlan }) {
       if (saveAll(next)) { setDraft(null); setActiveId(value.id); setSearch(''); setFilter(''); setMonth(value.start.slice(0, 7)); setSelectedDay(value.start); setMessage('일정을 저장했습니다.') }
     }}/></>}
     {view === '운영 캘린더' ? <Calendar {...{ events, plans, month, setMonth, selectedDay, setSelectedDay, filter, setFilter, facilities, onPlan }} onNew={newEvent} onEvent={showEvent}/> : <>
+      <div className="event-demo-mode-switch" role="group" aria-label="행사 전후 분석 자료 선택">
+        <button className={!eventDemoMode ? 'selected' : ''} type="button" aria-pressed={!eventDemoMode} onClick={() => setEventDemoMode(false)}>실제 방문 데이터</button>
+        <button className={eventDemoMode ? 'selected' : ''} type="button" aria-pressed={eventDemoMode} onClick={() => setEventDemoMode(true)}>시연용 가상 데이터 보기</button>
+        <span>시연 자료는 실제 기업 데이터와 분리됩니다.</span>
+      </div>
+      {eventDemoMode ? <EventDemo onExit={() => setEventDemoMode(false)}/> : <>
       <div className="ops-toolbar"><label className="ops-field ops-search">일정 검색<input value={search} onChange={e => setSearch(e.target.value)} placeholder="일정 이름, 시설, 메모"/></label>{operatorProfile.isRoot && <label className="ops-field">시설 필터<select value={filter} onChange={e => setFilter(e.target.value)}><option value="">{operatorProfile.isRoot ? '전체 시설' : '담당 시설'}</option>{facilities.map(f => <option key={f}>{f}</option>)}</select></label>}<span>{visible.length}개 일정</span></div>
       <div className="event-workspace"><section className="card event-list" aria-label="등록된 일정">{visible.length ? visible.map(e => <button key={e.id} className={`event-list-item ${e.id === active?.id ? 'active' : ''}`} onClick={() => { setActiveId(e.id); setDeleteId('') }}><span className="badge">{e.type}</span><strong>{e.title}</strong><small>{e.facility}</small><small>{e.start} ~ {e.end}</small></button>) : <div className="ops-empty"><Icon name="file" size={32}/><h3>{events.length ? '검색 결과가 없습니다' : '첫 일정을 기록해 보세요'}</h3><p>실제 진행한 전시나 행사를 등록하면 제공 데이터 범위에서 전후 변화를 확인할 수 있습니다.</p><button className="outline" onClick={() => onNavigate('운영 캘린더')}>캘린더에서 일정 등록</button></div>}</section>
       <section className="card event-detail" aria-label="선택 일정 상세">{active ? <><div className="card-heading"><div><span className="eyebrow">{active.facility} / {active.type}</span><h3>{active.title}</h3></div><div className="ops-actions"><button className="text-button" onClick={() => editEvent(active)}>수정</button><button className="text-button" onClick={() => setDeleteId(active.id)}>삭제</button></div></div><p>{active.start} ~ {active.end} · {active.age || '20·30대'} · {active.sex === 'F' ? '여성' : active.sex === 'M' ? '남성' : '전체 성별'}</p>{active.memo && <p className="event-memo">{active.memo}</p>}
         {deleteId === active.id && <div className="ops-delete" role="alert"><p>‘{active.title}’ 일정을 삭제할까요?</p><button className="outline" onClick={() => { if (saveAll(events.filter(e => e.id !== active.id))) { setActiveId(events.find(e => e.id !== active.id)?.id || ''); setDeleteId(''); setDeleted(active); if (editing?.id === active.id) setDraft(null); setMessage('일정을 삭제했습니다.') } }}>삭제 확인</button><button className="text-button" onClick={() => setDeleteId('')}>취소</button></div>}
         <EventAnalysis key={active.id} event={active} events={events}/>
       </> : <div className="ops-empty"><Icon name="chart" size={40}/><h3>분석할 일정을 선택하세요</h3><p>실제 기록을 선택하면 행사 전·중·후 집계와 관객 구성이 표시됩니다.</p>{metadata && <p>제공 데이터: {metadata.visits.start_date} ~ {metadata.visits.end_date}</p>}</div>}</section></div>
+      </>}
     </>}
   </div>
 }
