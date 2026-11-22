@@ -16,6 +16,7 @@ import FacilityCompare from './FacilityCompare'
 import Operations from './Operations'
 import Login from './Login'
 import { operatorProfile, operatorStorage, startRootDemo } from './operatorProfile.js'
+import { readAppRoute, resolveAppRoute, appRouteHref } from './appRoutes'
 import './App.css'
 import './Operations.css'
 
@@ -153,11 +154,24 @@ function readFilters() {
 }
 
 function App({ capstoneSetup = {} }) {
-  const [page, setPage] = useState('홈'), [tab, setTab] = useState(tabs[0])
-  const [typeTab, setTypeTab] = useState(typeTabs[0])
-  const [planToOpen, setPlanToOpen] = useState(null)
-  const [planStatus, setPlanStatus] = useState('전체')
-  const [planFacility, setPlanFacility] = useState('')
+  const [route, setRoute] = useState(readAppRoute)
+  const { page, tab = tabs[0], typeTab = typeTabs[0], planId: planToOpen = null, planStatus = '전체', planFacility = '' } = route
+  useEffect(() => {
+    const restore = () => setRoute(readAppRoute())
+    window.addEventListener('popstate', restore)
+    return () => window.removeEventListener('popstate', restore)
+  }, [])
+  useEffect(() => {
+    const canonical = appRouteHref(route)
+    if (`${window.location.pathname}${window.location.search}` !== canonical) window.history.replaceState(null, '', canonical)
+    document.title = `${page}${route.tab || route.typeTab ? ` · ${route.tab || route.typeTab}` : ''} | Museum Flow`
+  }, [route, page])
+  const goTo = next => {
+    const href = appRouteHref(next)
+    if (`${window.location.pathname}${window.location.search}` !== href) window.history.pushState(null, '', href)
+    setRoute(resolveAppRoute(href))
+    window.scrollTo(0, 0)
+  }
   const [filters, setFilterValues] = useState(() => { const saved = readFilters(); return operatorProfile.isRoot ? saved : { ...saved, facility: operatorProfile.facility } }), [granularity, setGranularity] = useState('month')
   const setFilters = value => setFilterValues(operatorProfile.isRoot ? value : { ...value, facility: operatorProfile.facility })
   const [preferences, setPreferenceValues] = useState(() => {
@@ -184,8 +198,8 @@ function App({ capstoneSetup = {} }) {
     try { sessionStorage.removeItem('museum-flow-session') } catch { /* Storage may be unavailable. */ }
     setLogged(false); setAttempts(5); setLoginError('')
   }
-  const navigate = v => { if (v === '실행 계획') { setPlanToOpen(null); setPlanStatus('전체'); setPlanFacility('') } setPage(v); window.scrollTo(0, 0) }
-  const openPlans = (id = null, status = '전체', facilityScope = '') => { setPlanToOpen(id); setPlanStatus(status); setPlanFacility(facilityScope); setPage('실행 계획'); window.scrollTo(0, 0) }
+  const navigate = page => goTo({ page })
+  const openPlans = (id = null, status = '전체', facilityScope = '') => goTo({ page: '실행 계획', planId: id, planStatus: status, planFacility: facilityScope })
   const luminance = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4).reduce((s, c, i) => s + c * [.2126, .7152, .0722][i], 0)
   const lightSide = luminance(sidebar) > .3
   const style = { '--content-scale': preferences.scale, '--primary': primary, '--primary-text': luminance(primary) > .179 ? '#172536' : '#fff', '--sidebar': sidebar, '--side-text': lightSide ? '#294333' : '#f1f4e8', '--side-muted': lightSide ? '#6e8072' : '#b0c4b4', '--side-active': lightSide ? '#36553c10' : '#dcebc5' }
@@ -208,21 +222,21 @@ function App({ capstoneSetup = {} }) {
   }}/>
 
   return <div className="app" style={style}><aside className="sidebar"><a className="logo" onClick={() => navigate('홈')}><span className="brand-mascot"><Mascot/></span><span className="brand-wordmark">Museum <span>Flow</span></span></a><div className="institution facility-profile-card" title={facility}><div className="institution-icon"><Icon name="museum"/></div><div className="facility-profile-copy"><span className="facility-profile-caption">{operatorProfile.isRoot ? '분석 중인 시설' : '담당 시설'}</span><b>{facility}</b><small className="facility-scope-badge"><i aria-hidden="true"/>{operatorProfile.role}</small></div></div><nav>{[['홈', 'home'], ['데이터 분석', 'chart'], ['시설 비교', 'museum'], ['시설·방문 유형', 'compass'], ['운영전략', 'bulb'], ['실행 계획', 'file'], ['운영 캘린더', 'calendar'], ['행사 전후 분석', 'chart']].map(([label, icon]) => <button key={label} className={page === label ? 'active' : ''} onClick={() => navigate(label)} aria-label={label}><Icon name={icon}/><span>{label}</span></button>)}</nav><div className="side-bottom"><button onClick={() => navigate('설정')} aria-label="설정"><Icon name="settings"/>설정</button><button aria-label="로그아웃" onClick={logout}><Icon name="logout"/>로그아웃</button></div><div className="side-footer">MUSEUM FLOW<br/><span>박물관의 내일을 위한 데이터</span></div></aside><div className="workspace"><header><span className="workspace-identity"><Icon name="museum" size={18}/>{operatorProfile.isRoot ? (filters.facility ? `${filters.facility} 분석 중` : '전체 시설 관리 워크스페이스') : `${operatorProfile.facility} 운영 워크스페이스`}</span></header><main>{capstoneSetup.error && <p role="alert" className="ops-error">{capstoneSetup.error}</p>}<div className="page-heading"><div><h1>{page === '홈' ? `${facility} 운영 현황` : page}</h1></div><div className={`heading-actions ${page === '홈' ? 'home-heading-actions' : ''}`}><button className={page === '홈' ? 'text-button home-data-guide' : 'outline'} onClick={() => setModal(true)}>데이터 기준 안내</button>{page === '데이터 분석' && (tab === tabs[0] || tab === tabs[1]) && <button className="outline" disabled={!dashboard.data} onClick={() => exportVisits(dashboard.data, filters)}>집계 CSV 다운로드</button>}{page === '운영전략' && <button className="primary" disabled={!dashboard.data} onClick={() => window.print()}>PDF 보고서 내보내기</button>}</div></div>
-    {['운영 캘린더', '행사 전후 분석'].includes(page) ? <Operations view={page} metadata={metadata.data} onNavigate={navigate} onPlan={openPlans}/> : page === '시설 비교' ? <ResourceState resource={metadata}>{metadata.data && <FacilityCompare metadata={metadata.data} filters={filters} onChange={setFilters}/>}</ResourceState> : page === '실행 계획' ? <ExecutionPlans initialId={planToOpen} initialStatus={planStatus} initialFacility={planFacility || operatorProfile.facility} onExplore={() => navigate('운영전략')}/> : <ResourceState resource={metadata}>{metadata.data && <>{page !== '설정' && <Filters value={filters} onChange={setFilters} metadata={metadata.data}/>}{page === '설정' ? <Settings {...{ primary, sidebar, setTheme, preferences, setPreferences, notify }}/> : <>
+    {['운영 캘린더', '행사 전후 분석'].includes(page) ? <Operations view={page} metadata={metadata.data} onNavigate={navigate} onPlan={openPlans}/> : page === '시설 비교' ? <ResourceState resource={metadata}>{metadata.data && <FacilityCompare metadata={metadata.data} filters={filters} onChange={setFilters}/>}</ResourceState> : page === '실행 계획' ? <ExecutionPlans key={appRouteHref(route)} initialId={planToOpen} initialStatus={planStatus} initialFacility={planFacility || operatorProfile.facility} onExplore={() => navigate('운영전략')}/> : <ResourceState resource={metadata}>{metadata.data && <>{page !== '설정' && <Filters value={filters} onChange={setFilters} metadata={metadata.data}/>}{page === '설정' ? <Settings {...{ primary, sidebar, setTheme, preferences, setPreferences, notify }}/> : <>
             {page === '데이터 분석' && (
         <PageBanner eyebrow="DISCOVER YOUR VISITORS" title={<>방문의 흐름을 읽고,<br/>우리 박물관을 이해하세요.</>} variant="investigate" label="방문 데이터 분석 소개"/>
       )}
 
-      {page === '데이터 분석' && <div className="tabs" role="tablist" aria-label="분석 종류">{tabs.map(label => <button key={label} role="tab" aria-selected={tab === label} className={tab === label ? 'selected' : ''} onClick={() => setTab(label)}>{label}</button>)}</div>}
+      {page === '데이터 분석' && <div className="tabs" role="tablist" aria-label="분석 종류">{tabs.map(label => <button key={label} role="tab" aria-selected={tab === label} className={tab === label ? 'selected' : ''} onClick={() => goTo({ page: '데이터 분석', tab: label })}>{label}</button>)}</div>}
       {page === '시설·방문 유형' && <>
         <PageBanner eyebrow={typeTab === typeTabs[0] ? 'FIND THE PATTERN' : 'EXPLORE THE CONNECTION'} title={typeTab === typeTabs[0] ? <>방문의 패턴을 찾고,<br/>관객의 하루를 이해하세요.</> : <>닮은 박물관을 만나고,<br/>새로운 가능성을 발견하세요.</>} variant={typeTab === typeTabs[0] ? 'pattern' : 'explorer'} label="시설·방문 유형 소개"/>
-        <div className="tabs" role="tablist" aria-label="시설·방문 유형 분석">{typeTabs.map(label => <button key={label} role="tab" aria-selected={typeTab === label} className={typeTab === label ? 'selected' : ''} onClick={() => setTypeTab(label)}>{label}</button>)}</div>
+        <div className="tabs" role="tablist" aria-label="시설·방문 유형 분석">{typeTabs.map(label => <button key={label} role="tab" aria-selected={typeTab === label} className={typeTab === label ? 'selected' : ''} onClick={() => goTo({ page: '시설·방문 유형', typeTab: label })}>{label}</button>)}</div>
       </>}
       {page === '데이터 분석' && tab === tabs[2] ? <Relations filters={filters} metadata={metadata.data}/>
         : page === '시설·방문 유형' && typeTab === typeTabs[0] ? <ClusterPattern filters={filters} metadata={metadata.data}/>
         : page === '시설·방문 유형' && typeTab === typeTabs[1] ? <SimilarMuseums filters={filters} metadata={metadata.data}/> : <ResourceState resource={dashboard}>{dashboard.data && <>
         {!dashboard.data.summary.observed_rows && <div className="info-banner">선택 조건의 관측 행이 없습니다. 필터를 변경해 주세요. 누락값을 실제 방문 0으로 단정하지 않습니다.</div>}
-        {page === '홈' && <HomeHub data={dashboard.data} filters={filters} onAnalyze={() => { setTab(tabs[0]); navigate('데이터 분석') }} onStrategies={() => navigate('운영전략')} onPlans={(id, status) => openPlans(id, status, filters.facility)}/>}
+        {page === '홈' && <HomeHub data={dashboard.data} filters={filters} onAnalyze={() => goTo({ page: '데이터 분석', tab: tabs[0] })} onStrategies={() => navigate('운영전략')} onPlans={(id, status) => openPlans(id, status, filters.facility)}/>}
         {page === '데이터 분석' && tab === tabs[0] && <Visits data={dashboard.data} hourStart={0} hourEnd={23} {...{ chart, setChart, granularity, setGranularity }}/>}
         {page === '데이터 분석' && tab === tabs[1] && <Audience data={dashboard.data}/>}
         {page === '운영전략' && <StrategyWorkspace data={dashboard.data} filters={filters} onViewPlans={openPlans}/>}

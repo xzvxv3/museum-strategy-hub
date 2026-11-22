@@ -13,6 +13,8 @@
     "test:operations": "node scripts/verify-operations.mjs",
     "test:events": "node scripts/test-event-store.mjs",
     "test:plans": "node scripts/test-plan-schedule.mjs",
+    "test:routes": "node scripts/test-app-routes.mjs",
+    "test:routes:browser": "node scripts/verify-routes.mjs",
     "test:capstone": "node scripts/test-agriculture-capstone.mjs",
     "test:capstone:browser": "node scripts/verify-capstone.mjs",
     "test:operations:dom": "node scripts/verify-operations-dom.cjs"
