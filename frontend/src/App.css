@@ -468,3 +468,12 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 .plan-outcome-summary small{display:block;margin-top:12px;font-size:11px;line-height:1.7;color:#73877b}
 @media(max-width:600px){.plan-execution-checklist{padding:13px}.plan-outcome-summary{padding:15px}.plan-section-heading{display:grid;gap:5px}}
 @media print{.plan-outcome-summary,.plan-execution-checklist{break-inside:avoid}}
+
+.card-heading-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.info-tip{position:relative;display:inline-flex;flex:none}
+.info-tip-button{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid #cbd8cf;background:#f5f8f3;color:#597361;font-size:12px;font-weight:700;line-height:1;cursor:help;display:inline-flex;align-items:center;justify-content:center}
+.info-tip-button:hover,.info-tip-button:focus-visible,.info-tip.open .info-tip-button{background:var(--primary);border-color:var(--primary);color:#fff}
+.info-tip-bubble{position:absolute;top:calc(100% + 8px);right:0;z-index:40;width:max-content;max-width:min(300px,78vw);padding:11px 13px;border-radius:10px;background:#263536;color:#f2f6f2;font-size:12px;font-weight:400;line-height:1.75;text-align:left;white-space:normal;box-shadow:0 8px 24px #16363826;opacity:0;visibility:hidden;transition:opacity .12s;pointer-events:none}
+.info-tip:hover .info-tip-bubble,.info-tip-button:focus-visible+.info-tip-bubble,.info-tip.open .info-tip-bubble{opacity:1;visibility:visible}
+.info-tip.dismissed .info-tip-bubble{opacity:0;visibility:hidden}
+@media print{.info-tip{display:none}}

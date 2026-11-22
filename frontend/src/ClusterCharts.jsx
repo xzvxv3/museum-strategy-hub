@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card } from './ui'
+import { Card, InfoTip } from './ui'
 import { pct } from './clusterUtils'
 import './Cluster.css'
 
@@ -18,8 +18,11 @@ export function ClusterGate({ resource, title, scope, runNote, children }) {
   return children(resource.data)
 }
 
+/** items: [label, value, unit, sub, help?] — help adds a tooltip at the card's top-right. */
 export function StatCards({ items }) {
-  return <div className="kpis">{items.map(([label, value, unit, sub]) => <div className="card kpi stat-card" key={label}><h3 className="stat-title">{label}</h3><strong className="stat-value">{value}<small>{unit}</small></strong><p className="stat-support">{sub}</p></div>)}</div>
+  return <div className="kpis">{items.map(([label, value, unit, sub, help]) => <div className="card kpi stat-card cluster-stat" key={label}>
+    {help && <span className="stat-tip"><InfoTip text={help} label={`${label} 설명 보기`}/></span>}
+    <h3 className="stat-title">{label}</h3><strong className="stat-value">{value}<small>{unit}</small></strong><p className="stat-support">{sub}</p></div>)}</div>
 }
 
 export function Segmented({ label, value, options, onChange }) {
