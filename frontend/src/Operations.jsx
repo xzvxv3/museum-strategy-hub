@@ -3,7 +3,7 @@ import { operatorProfile } from './operatorProfile.js'
 import { useEffect, useState } from 'react'
 import { Card, Icon } from './ui'
 import { Trend } from './Charts'
-import { readPlans, status } from './planStore'
+import { readPlans, status, planPeriod, planAnalysisEvents, planReviewItems } from './planStore'
 import { dateString, readEvents, writeEvents, validateEvent, eventKey, readDraft, storeDraft, clearDraft, overlappingEvents } from './eventStore'
 import { downloadCsv } from './downloads'
 import useAnalysis from './useAnalysis'
@@ -44,6 +44,7 @@ function EventAnalysis({ event, events }) {
   const overlaps = overlappingEvents(event, events, windowDays)
   if (event.type === '휴관') return <p className="ops-note">휴관 일정은 운영 캘린더에서 확인합니다. 휴관 중에도 주변 활동 등 방문 인구가 집계될 수 있으므로 실제 입장객으로 해석하지 않습니다.</p>
   const exportReport = () => downloadCsv(`${event.title}_전후분석.csv`, [
+    ['자료 출처', '실제 방문 데이터', '관측 집계'],
     ['일정', '시설', '대상 연령', '대상 성별', '구간', '시작일', '종료일', '방문 인구 합계', '관측일', '달력일', '관측일 평균', '요일 보정 평균', '비교 가능', '부족 사유'],
     ...data.periods.map(p => [event.title, event.facility, event.age || '20·30대', event.sex || '전체', p.label, p.start_date, p.end_date, p.population, p.observed_days, p.calendar_days, p.daily_average, p.weekday_adjusted_average, p.ready ? '예' : '아니오', p.reason]),
     ['전후 변화율(%)', data.change_percent, data.comparison_reason || '', '행사 효과나 인과관계를 뜻하지 않습니다.'],
@@ -52,7 +53,7 @@ function EventAnalysis({ event, events }) {
   const selected = data?.periods.find(p => p.key === period)
   const before = data?.periods[0], after = data?.periods[2]
   return <div className="event-analysis">
-    <div className="ops-toolbar"><label className="ops-field">전후 비교 기간<select value={windowDays} onChange={e => setWindowDays(Number(e.target.value))}>{[7, 14, 28, 56].map(d => <option key={d} value={d}>행사 전·후 각각 {d}일</option>)}</select></label>{data && <button className="outline" onClick={exportReport}>분석 CSV 다운로드</button>}</div>
+    <div className="ops-toolbar"><label className="ops-field">전후 비교 기간<select aria-label="전후 비교 기간" value={windowDays} onChange={e => setWindowDays(Number(e.target.value))}>{[7, 14, 28, 56].map(d => <option key={d} value={d}>행사 전·후 각각 {d}일</option>)}</select></label>{data && <button className="outline" onClick={exportReport}>분석 CSV 다운로드</button>}</div>
     {resource.loading && <p role="status">전후 방문 데이터를 분석하는 중…</p>}
     {resource.error && <div className="ops-error" role="alert"><p>{resource.error}</p><button className="outline" onClick={resource.retry}>다시 시도</button></div>}
     {overlaps.length > 0 && <div className="ops-overlap" role="note"><strong>비교 구간에 다른 일정 {overlaps.length}개가 있습니다</strong><p>등록된 같은 시설의 기록 기준입니다. 휴관이나 다른 행사가 전후 방문 변화에 영향을 줄 수 있어 함께 확인해야 합니다. 집계에서 자동으로 제외하지 않습니다.</p><ul>{overlaps.map(e => <li key={e.id}>{e.type} · {e.title} · {e.start} ~ {e.end}</li>)}</ul></div>}
@@ -76,8 +77,8 @@ function Calendar({ events, plans, month, setMonth, selectedDay, setSelectedDay,
   const count = new Date(year, m, 0).getDate()
   const cells = Array.from({ length: Math.ceil((offset + count) / 7) * 7 }, (_, i) => i >= offset && i < offset + count ? `${month}-${String(i - offset + 1).padStart(2, '0')}` : null)
   const scopedEvents = events.filter(e => !filter || e.facility === filter)
-  const scopedPlans = Object.entries(plans).filter(([, p]) => !p.archived && p.due && (!filter || p.scope.facility === filter))
-  const onDay = day => [...scopedEvents.filter(e => e.start <= day && day <= e.end).map(e => ({ key: e.id, type: e.type, title: e.title, event: e })), ...scopedPlans.filter(([, p]) => p.due === day).map(([id, p]) => ({ key: `plan-${id}`, type: '계획', title: p.strategy.title, plan: p, id }))]
+  const scopedPlans = Object.entries(plans).filter(([, p]) => !p.archived && planPeriod(p).start && planPeriod(p).end && (!filter || p.scope.facility === filter))
+  const onDay = day => [...scopedEvents.filter(e => e.start <= day && day <= e.end).map(e => ({ key: e.id, type: e.type, title: e.title, event: e })), ...scopedPlans.filter(([, p]) => planPeriod(p).start <= day && day <= planPeriod(p).end).map(([id, p]) => ({ key: `plan-${id}`, type: '계획', title: p.strategy.title, plan: p, id }))]
   const items = onDay(selectedDay)
   const move = delta => { const next = new Date(year, m - 1 + delta, 1); if (next.getFullYear() >= 1901 && next.getFullYear() <= 2099) { const day = dateString(next); setMonth(day.slice(0, 7)); setSelectedDay(day) } }
   return <>
@@ -85,8 +86,8 @@ function Calendar({ events, plans, month, setMonth, selectedDay, setSelectedDay,
     <div className="ops-calendar-layout"><section className="card ops-calendar" aria-label="월간 운영 일정"><div className="calendar-weekdays">{['월', '화', '수', '목', '금', '토', '일'].map(d => <span key={d}>{d}</span>)}</div><div className="calendar-grid">{cells.map((day, i) => {
       const dayItems = day ? onDay(day) : []
       return day ? <button key={day} className={`calendar-day ${day === selectedDay ? 'active' : ''} ${day === dateString(new Date()) ? 'today' : ''}`} aria-label={`${day}, 일정 ${dayItems.length}개`} aria-pressed={day === selectedDay} onClick={() => setSelectedDay(day)}><b>{Number(day.slice(-2))}</b>{dayItems.slice(0, 2).map(item => <span key={item.key} className={`calendar-chip ${item.type === '휴관' ? 'closed' : item.type === '계획' ? 'plan' : ''}`}><i>{item.type}</i>{item.title}</span>)}{dayItems.length > 2 && <small>+{dayItems.length - 2}개</small>}</button> : <div key={`blank-${i}`} className="calendar-day blank"/>
-    })}</div><div className="calendar-legend"><span>● 전시·행사</span><span>● 휴관</span><span>● 실행 계획 목표일</span></div></section>
-    <Card title={`${selectedDay} 일정`} className="calendar-detail" action={<button className="text-button" onClick={() => onNew(selectedDay)}>+ 등록</button>}>{items.length ? items.map(item => <button className="calendar-detail-item" key={item.key} onClick={() => item.event ? onEvent(item.event) : onPlan(item.id)}><span className="badge">{item.type}</span><strong>{item.title}</strong><small>{item.event ? `${item.event.facility} · ${item.event.start} ~ ${item.event.end}` : `${item.plan.owner || '담당자 미지정'} · ${status(item.plan.checks)}`}</small><span>상세 보기 →</span></button>) : <div className="ops-empty"><Icon name="calendar" size={32}/><p>등록된 일정이 없습니다.</p><button className="outline" onClick={() => onNew(selectedDay)}>이 날짜에 일정 등록</button></div>}</Card></div>
+    })}</div><div className="calendar-legend"><span>● 전시·행사</span><span>● 휴관</span><span>● 실행 계획 기간</span></div></section>
+    <Card title={`${selectedDay} 일정`} className="calendar-detail" action={<button className="text-button" onClick={() => onNew(selectedDay)}>+ 등록</button>}>{items.length ? items.map(item => <button className="calendar-detail-item" key={item.key} onClick={() => item.event ? onEvent(item.event) : onPlan(item.id)}><span className="badge">{item.type}</span><strong>{item.title}</strong><small>{item.event ? `${item.event.facility} · ${item.event.start} ~ ${item.event.end}` : `${item.plan.owner || '담당자 미지정'} · ${planPeriod(item.plan).start} ~ ${planPeriod(item.plan).end} · ${status(item.plan.checks, item.plan.workflowStatus)}`}</small><span>상세 보기 →</span></button>) : <div className="ops-empty"><Icon name="calendar" size={32}/><p>등록된 일정이 없습니다.</p><button className="outline" onClick={() => onNew(selectedDay)}>이 날짜에 일정 등록</button></div>}</Card></div>
   </>
 }
 export default function Operations({ view, metadata, onNavigate, onPlan }) {
@@ -100,11 +101,12 @@ export default function Operations({ view, metadata, onNavigate, onPlan }) {
   const [deleted, setDeleted] = useState(null)
   const [activeId, setActiveId] = useState(initial.items[0]?.id || '')
   const [deleteId, setDeleteId] = useState('')
-  const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('')
   const [selectedDay, setSelectedDay] = useState(() => dateString(new Date()))
   const [month, setMonth] = useState(() => dateString(new Date()).slice(0, 7))
   const plans = readPlans()
+  const analysisEvents = [...events, ...planAnalysisEvents(plans)]
+  const reviewItems = [...events.filter(event => ['행사', '전시'].includes(event.type) && event.end < dateString(new Date())), ...planReviewItems(plans)]
   const facilities = operatorProfile.isRoot ? [...new Set([...(metadata?.facilities || []), ...events.map(event => event.facility), ...Object.values(plans).map(plan => plan.scope.facility).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'ko')) : [operatorProfile.facility]
   useEffect(() => {
     const changed = e => { if (e.key === eventKey || e.key === null) setError('다른 탭에서 저장된 일정이 변경되었습니다. 다시 불러온 뒤 확인해 주세요.') }
@@ -119,9 +121,9 @@ export default function Operations({ view, metadata, onNavigate, onPlan }) {
   const saveAll = next => { try { writeEvents(next, events); setEvents(next); setError(''); return true } catch (e) { setError(`저장하지 못했습니다: ${e.message}`); return false } }
   const reloadEvents = () => { try { setEvents(readEvents()); setError(''); setMessage('저장된 일정을 다시 불러왔습니다. 작성 중인 내용은 유지했습니다.') } catch (e) { setError(e.message) } }
   const newEvent = (day = dateString(new Date())) => { if (editing) { setMessage('작성 중인 일정을 먼저 저장하거나 취소해 주세요.'); return } setDraft({ value: { id: '', title: '', facility: filter || facilities[0] || '', type: '행사', start: day, end: day, age: '', sex: '', memo: '' }, base: null }); setMessage('') }
-  const showEvent = e => { setActiveId(e.id); setSearch(''); setFilter(''); setDeleteId(''); onNavigate('행사 전후 분석') }
+  const showEvent = e => { setActiveId(e.id); setFilter(''); setDeleteId(''); onNavigate('행사 전후 분석') }
   const editEvent = e => { if (editing) { setMessage('작성 중인 일정을 먼저 저장하거나 취소해 주세요.'); return } setDraft({ value: { ...e }, base: { ...e } }); onNavigate('운영 캘린더') }
-  const visible = events.filter(e => (!filter || e.facility === filter) && `${e.title} ${e.facility} ${e.memo}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => b.start.localeCompare(a.start))
+  const visible = reviewItems.filter(e => !filter || e.facility === filter).sort((a, b) => b.start.localeCompare(a.start))
   const active = visible.find(e => e.id === activeId) || visible[0]
   return <div className="ops-page">
     <PageBanner eyebrow={view === '운영 캘린더' ? 'OPERATIONS CALENDAR' : 'EVENT REVIEW'} title={view === '운영 캘린더' ? <>다가오는 일정을 살피고,<br/>박물관의 하루를 준비하세요.</> : <>행사 전후를 살펴보고,<br/>다음 기획의 힌트를 찾으세요.</>} variant={view === '운영 캘린더' ? 'calendar' : 'event-review'} label={view + ' 소개'}/>
@@ -132,21 +134,20 @@ export default function Operations({ view, metadata, onNavigate, onPlan }) {
     {editing && view === '운영 캘린더' && <><EventForm key={editing.id || 'new'} initial={draftEntry.base || {}} draft={editing} onDraft={value => setDraft({ ...draftEntry, value })} facilities={facilities} onCancel={() => setDraft(null)} onSave={value => {
       if (draftEntry.base && JSON.stringify(events.find(e => e.id === draftEntry.base.id)) !== JSON.stringify(draftEntry.base)) { setError('편집 중 원래 일정이 변경되거나 삭제되었습니다. 입력 내용을 복사한 뒤 취소하고 최신 일정을 다시 열어 주세요.'); return }
       const next = draftEntry.base ? events.map(e => e.id === value.id ? value : e) : [...events, value]
-      if (saveAll(next)) { setDraft(null); setActiveId(value.id); setSearch(''); setFilter(''); setMonth(value.start.slice(0, 7)); setSelectedDay(value.start); setMessage('일정을 저장했습니다.') }
+      if (saveAll(next)) { setDraft(null); setActiveId(value.id); setFilter(''); setMonth(value.start.slice(0, 7)); setSelectedDay(value.start); setMessage('일정을 저장했습니다.') }
     }}/></>}
     {view === '운영 캘린더' ? <Calendar {...{ events, plans, month, setMonth, selectedDay, setSelectedDay, filter, setFilter, facilities, onPlan }} onNew={newEvent} onEvent={showEvent}/> : <>
       <div className="event-demo-mode-switch" role="group" aria-label="행사 전후 분석 자료 선택">
-        <button className={!eventDemoMode ? 'selected' : ''} type="button" aria-pressed={!eventDemoMode} onClick={() => setEventDemoMode(false)}>실제 방문 데이터</button>
-        <button className={eventDemoMode ? 'selected' : ''} type="button" aria-pressed={eventDemoMode} onClick={() => setEventDemoMode(true)}>시연용 가상 데이터 보기</button>
-        <span>시연 자료는 실제 기업 데이터와 분리됩니다.</span>
+        <button className={!eventDemoMode ? 'selected' : ''} type="button" aria-pressed={!eventDemoMode} onClick={() => setEventDemoMode(false)}>실제 행사 분석</button>
+        <button className={eventDemoMode ? 'selected' : ''} type="button" aria-pressed={eventDemoMode} onClick={() => setEventDemoMode(true)}>예시 데이터 분석</button>
       </div>
       {eventDemoMode ? <EventDemo onExit={() => setEventDemoMode(false)}/> : <>
-      <div className="ops-toolbar"><label className="ops-field ops-search">일정 검색<input value={search} onChange={e => setSearch(e.target.value)} placeholder="일정 이름, 시설, 메모"/></label>{operatorProfile.isRoot && <label className="ops-field">시설 필터<select value={filter} onChange={e => setFilter(e.target.value)}><option value="">{operatorProfile.isRoot ? '전체 시설' : '담당 시설'}</option>{facilities.map(f => <option key={f}>{f}</option>)}</select></label>}<span>{visible.length}개 일정</span></div>
-      <div className="event-workspace"><section className="card event-list" aria-label="등록된 일정">{visible.length ? visible.map(e => <button key={e.id} className={`event-list-item ${e.id === active?.id ? 'active' : ''}`} onClick={() => { setActiveId(e.id); setDeleteId('') }}><span className="badge">{e.type}</span><strong>{e.title}</strong><small>{e.facility}</small><small>{e.start} ~ {e.end}</small></button>) : <div className="ops-empty"><Icon name="file" size={32}/><h3>{events.length ? '검색 결과가 없습니다' : '첫 일정을 기록해 보세요'}</h3><p>실제 진행한 전시나 행사를 등록하면 제공 데이터 범위에서 전후 변화를 확인할 수 있습니다.</p><button className="outline" onClick={() => onNavigate('운영 캘린더')}>캘린더에서 일정 등록</button></div>}</section>
-      <section className="card event-detail" aria-label="선택 일정 상세">{active ? <><div className="card-heading"><div><span className="eyebrow">{active.facility} / {active.type}</span><h3>{active.title}</h3></div><div className="ops-actions"><button className="text-button" onClick={() => editEvent(active)}>수정</button><button className="text-button" onClick={() => setDeleteId(active.id)}>삭제</button></div></div><p>{active.start} ~ {active.end} · {active.age || '20·30대'} · {active.sex === 'F' ? '여성' : active.sex === 'M' ? '남성' : '전체 성별'}</p>{active.memo && <p className="event-memo">{active.memo}</p>}
+      <div className="ops-toolbar">{operatorProfile.isRoot && <label className="ops-field">시설 필터<select value={filter} onChange={e => setFilter(e.target.value)}><option value="">{operatorProfile.isRoot ? '전체 시설' : '담당 시설'}</option>{facilities.map(f => <option key={f}>{f}</option>)}</select></label>}<span>{visible.length}개 일정</span></div>
+      <div className="event-workspace"><section className="card event-list" aria-label="등록된 일정">{visible.length ? visible.map(e => <button key={e.id} className={`event-list-item ${e.id === active?.id ? 'active' : ''}`} aria-pressed={e.id === active?.id} onClick={() => { setActiveId(e.id); setDeleteId('') }}><span className="badge">{e.type}</span><strong>{e.title}</strong>{e.planId && <small>운영전략 계획 · 완료 · {e.analysisReady ? e.dateBasis : '기간·시설 확인 필요'}</small>}<small>{e.facility}</small><small>{e.start && e.end ? `${e.start} ~ ${e.end}` : '등록된 실행 기간 없음'}</small></button>) : <div className="ops-empty"><Icon name="file" size={32}/><h3>{reviewItems.length ? '검색 결과가 없습니다' : '아직 완료된 행사·전시가 없습니다'}</h3><p>완료된 행사·전시만 표시합니다. 완료된 계획은 등록된 실행 기간을 기준으로 바로 분석합니다.</p><button className="outline" onClick={() => onNavigate('운영 캘린더')}>캘린더에서 일정 등록</button></div>}</section>
+      {active && <section className="card event-detail" aria-label="선택 일정 상세"><><div className="card-heading"><div><span className="eyebrow">{active.facility} / {active.type}</span><h3>{active.title}</h3></div><div className="ops-actions">{active.planId ? <button className="text-button" onClick={() => onPlan(active.planId)}>실행 계획 수정</button> : <><button className="text-button" onClick={() => editEvent(active)}>수정</button><button className="text-button" onClick={() => setDeleteId(active.id)}>삭제</button></>}</div></div><p>{active.start && active.end ? `${active.start} ~ ${active.end}` : '등록된 실행 기간 없음'} · {active.age || '20·30대'} · {active.sex === 'F' ? '여성' : active.sex === 'M' ? '남성' : '전체 성별'}</p>{active.planId && active.analysisReady && <p className="ops-note">분석 기준: {active.dateBasis}{active.dateBasis === '실제 실행 기간' ? '' : ' · 실제 진행 기록과 날짜가 다르면 실행 계획에서 수정할 수 있습니다.'}</p>}{active.memo && <p className="event-memo">{active.memo}</p>}
         {deleteId === active.id && <div className="ops-delete" role="alert"><p>‘{active.title}’ 일정을 삭제할까요?</p><button className="outline" onClick={() => { if (saveAll(events.filter(e => e.id !== active.id))) { setActiveId(events.find(e => e.id !== active.id)?.id || ''); setDeleteId(''); setDeleted(active); if (editing?.id === active.id) setDraft(null); setMessage('일정을 삭제했습니다.') } }}>삭제 확인</button><button className="text-button" onClick={() => setDeleteId('')}>취소</button></div>}
-        <EventAnalysis key={active.id} event={active} events={events}/>
-      </> : <div className="ops-empty"><Icon name="chart" size={40}/><h3>분석할 일정을 선택하세요</h3><p>실제 기록을 선택하면 행사 전·중·후 집계와 관객 구성이 표시됩니다.</p>{metadata && <p>제공 데이터: {metadata.visits.start_date} ~ {metadata.visits.end_date}</p>}</div>}</section></div>
+        {!active.planId || active.analysisReady ? <EventAnalysis key={active.id} event={active} events={analysisEvents}/> : <div className="ops-empty"><p>분석할 기간이나 시설이 없습니다. 실행 계획에 종료된 기간(최대 366일)과 시설을 지정해 주세요.</p><button type="button" className="outline" onClick={() => onPlan(active.planId)}>실행 계획 수정</button></div>}
+      </></section>}</div>
       </>}
     </>}
   </div>

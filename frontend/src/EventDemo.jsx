@@ -52,11 +52,11 @@ export default function EventDemo({ onExit }) {
   return <section className="event-demo" aria-label="시연용 가상 데이터 행사 분석">
     <div className="event-demo-intro">
       <div>
-        <strong>시연용 가상 데이터 · 실제 기업 자료 아님</strong>
-        <h2>행사 전후 분석 시연</h2>
-        <p>행사 전·중·후의 방문 변화와 운영에 참고할 점을 보여주는 예시입니다. 실제 관측값이나 예측 결과가 아닙니다.</p>
+        <strong>예시 데이터</strong>
+        <h2>가상 데이터로 살펴보는 분석 예시</h2>
+        <p>실제 운영 기록이 아닌 예시 데이터입니다. 행사 전·중·후의 방문 변화와 운영 검토 방법을 살펴볼 수 있습니다.</p>
       </div>
-      <button type="button" onClick={onExit}>실제 데이터 화면으로</button>
+      <button type="button" onClick={onExit}>실제 행사 분석으로</button>
     </div>
 
     <div className="event-demo-controls">
