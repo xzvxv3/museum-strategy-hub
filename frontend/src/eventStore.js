@@ -6,7 +6,7 @@ export function validDate(value) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value >= '1901-01-01' && value <= '2099-12-31'
 }
 export function validateEvent(v) {
-  return v && typeof v.id === 'string' && v.id.trim().length > 0 && v.id.length <= 100 && typeof v.title === 'string' && v.title.trim().length > 0 && v.title.length <= 100 && typeof v.facility === 'string' && v.facility.trim().length > 0 && v.facility.length <= 100 && ['전시', '행사', '휴관'].includes(v.type) && validDate(v.start) && validDate(v.end) && v.start <= v.end && (new Date(v.end) - new Date(v.start)) / 86400000 <= 365 && ['', '20대', '30대'].includes(v.age) && ['', 'F', 'M'].includes(v.sex) && typeof v.memo === 'string' && v.memo.length <= 2000
+  return v && typeof v.id === 'string' && v.id.trim().length > 0 && v.id.length <= 100 && typeof v.title === 'string' && v.title.trim().length > 0 && v.title.length <= 100 && typeof v.facility === 'string' && v.facility.trim().length > 0 && v.facility.length <= 100 && ['전시', '행사', '휴관', '운영'].includes(v.type) && validDate(v.start) && validDate(v.end) && v.start <= v.end && (new Date(v.end) - new Date(v.start)) / 86400000 <= 365 && ['', '20대', '30대'].includes(v.age) && ['', 'F', 'M'].includes(v.sex) && typeof v.memo === 'string' && v.memo.length <= 2000
 }
 export function readEvents() {
   const raw = JSON.parse(localStorage.getItem(eventKey) ?? localStorage.getItem('culture-operations-events-v1') ?? '[]')

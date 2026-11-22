@@ -38,7 +38,7 @@ export function planAnalysisEvents(plans) {
   return Object.entries(plans).flatMap(([id, plan]) => {
     const range = planAnalysisRange(plan)
     if (plan.archived || status(plan.checks, plan.workflowStatus) !== '완료' || !(plan.analysisFacility || plan.scope.facility) || !range) return []
-    return [{ id: `plan:${id}`, planId: id, title: plan.strategy.title, facility: plan.analysisFacility || plan.scope.facility, type: plan.eventType || '실행 계획', ...range, age: plan.scope.age, sex: plan.scope.sex, memo: plan.outcome || '' }]
+    return [{ id: `plan:${id}`, planId: id, title: plan.strategy.title, facility: plan.analysisFacility || plan.scope.facility, type: plan.eventType || '실행 계획', demoSource: plan.demoSource, demoScenario: plan.demoScenario, ...range, age: plan.scope.age, sex: plan.scope.sex, memo: plan.outcome || '' }]
   })
 }
 export function planReviewItems(plans) {

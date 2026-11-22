@@ -28,3 +28,8 @@
 @media(max-width:1100px){.ops-page .event-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.ops-page .event-list,.ops-page .event-periods{grid-template-columns:minmax(0,1fr)}}
 .plan-analysis-hint{font-size:11px;color:#60786e;line-height:1.7;margin-top:10px}
+.capstone-data-notice{padding:15px 18px;border:1px solid #d8bf8e;border-left:4px solid #b48335;border-radius:10px;background:#fff9ed;color:#735624}
+.capstone-data-notice strong{font-size:14px}
+.capstone-data-notice p,.capstone-analysis-hint{font-size:12px;line-height:1.8;margin:5px 0 0}
+.capstone-analysis-hint{padding:12px 15px;border:1px solid #e5d5b5;border-radius:9px;background:#fff9ed;color:#735624}
+.capstone-source-badge{font-size:10px;font-weight:600;padding:4px 7px;background:#fff2d5;color:#805a1c;border-radius:6px}

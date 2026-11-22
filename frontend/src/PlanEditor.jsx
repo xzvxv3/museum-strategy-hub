@@ -41,7 +41,7 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
       setMessage('완료하려면 실행 결과를 기록해 주세요.')
       return
     }
-    const saved = onSave(id, { strategy, scope, owner: owner.trim(), due: executionEnd, executionStart, executionEnd, eventType, actualStart, actualEnd, linkAnalysis: !!(eventType && actualStart && actualEnd), ...(record?.analysisFacility ? { analysisFacility: record.analysisFacility } : {}), memo: memo.trim(), purpose: purpose.trim(), successCriteria: successCriteria.trim(), checks, workflowStatus: nextStatus, outcome: outcome.trim(), updated_at: new Date().toISOString() })
+    const saved = onSave(id, { ...(record?.demoSource ? { demoSource: record.demoSource, demoScenario: record.demoScenario } : {}), strategy, scope, owner: owner.trim(), due: executionEnd, executionStart, executionEnd, eventType, actualStart, actualEnd, linkAnalysis: !!(eventType && actualStart && actualEnd), ...(record?.analysisFacility ? { analysisFacility: record.analysisFacility } : {}), memo: memo.trim(), purpose: purpose.trim(), successCriteria: successCriteria.trim(), checks, workflowStatus: nextStatus, outcome: outcome.trim(), updated_at: new Date().toISOString() })
     if (saved) {
       setWorkflowStatus(nextStatus)
       try { sessionStorage.removeItem(draftKey) } catch { /* Optional draft storage. */ }

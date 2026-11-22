@@ -12,8 +12,10 @@
     "test:improvements": "node scripts/verify-improvements.mjs",
     "test:operations": "node scripts/verify-operations.mjs",
     "test:events": "node scripts/test-event-store.mjs",
-    "test:operations:dom": "node scripts/verify-operations-dom.cjs",
-    "test:plans": "node scripts/test-plan-schedule.mjs"
+    "test:plans": "node scripts/test-plan-schedule.mjs",
+    "test:capstone": "node scripts/test-agriculture-capstone.mjs",
+    "test:capstone:browser": "node scripts/verify-capstone.mjs",
+    "test:operations:dom": "node scripts/verify-operations-dom.cjs"
   },
   "dependencies": {
     "react": "^19.3.1",
