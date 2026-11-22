@@ -477,3 +477,21 @@ footer{background:#f7f6f2;color:#526c63;border-color:#dce5df}footer p,footer sma
 .info-tip:hover .info-tip-bubble,.info-tip-button:focus-visible+.info-tip-bubble,.info-tip.open .info-tip-bubble{opacity:1;visibility:visible}
 .info-tip.dismissed .info-tip-bubble{opacity:0;visibility:hidden}
 @media print{.info-tip{display:none}}
+.plan-delete-button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 12px;border:1px solid #e4beba;border-radius:8px;background:#fff7f6;color:#a13e36;font-size:11px;font-weight:600}
+.plan-delete-button:hover{background:#fbe9e6;border-color:#c9837c}
+.plan-delete-button:focus-visible{outline:2px solid #a13e36;outline-offset:3px}
+.execution-detail .plan-detail-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.plan-form-error{margin-top:14px;color:#a13e36;font-size:12px;line-height:1.7}
+.plan-editor-actions{padding-top:18px;border-top:1px solid #e5ebe6;gap:12px}
+.plan-editor-actions>button{min-height:42px}
+.plan-editor-actions>button:only-child{margin-left:auto}
+@media(max-width:600px){.plan-editor-actions{flex-direction:column;align-items:stretch}.plan-editor-actions>button{width:100%}}
+.plan-editor .plan-date-range{margin:0 0 16px;padding:12px 14px;border:1px solid #d7e5de;border-radius:10px;min-width:0}
+.plan-date-range legend{padding:0 5px;font-size:12px;font-weight:600;color:#315d54}
+.plan-editor .plan-date-range .plan-fields{margin:0;gap:12px}
+.plan-editor .plan-fields select{display:block;width:100%;margin-top:7px;min-height:38px}
+.plan-editor .plan-analysis-toggle{display:flex;align-items:center;gap:8px;margin-top:12px;line-height:1.6}
+.plan-analysis-toggle input{width:16px;height:16px;margin:0;flex-shrink:0;accent-color:var(--primary)}
+.plan-period-picker{margin-bottom:16px}
+.plan-editor .date-range-field{width:100%;min-width:0}
+.plan-editor .date-range-trigger{width:100%;min-height:42px;margin-top:7px}

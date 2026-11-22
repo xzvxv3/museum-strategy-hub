@@ -45,7 +45,7 @@ export function ChartTable({ title, head, rows }) {
       onClick={event => { if (pointerStartedOutside.current && outside(event)) dialog.current.close(); pointerStartedOutside.current = false }}>
       <div className="chart-values-heading"><div><span>차트 수치</span><h2 id={titleId}>{title}</h2></div><button type="button" className="outline" autoFocus onClick={() => dialog.current.close()}>닫기</button></div>
       <div className="chart-values-scroll" tabIndex={0} role="region" aria-label={`${title} 수치 표`}><DataTable head={head} rows={rows}/></div>
-    </dialog>, document.body)}
+    </dialog>, document.querySelector('.app') || document.body)}
   </div>
 }
 

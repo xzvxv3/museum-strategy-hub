@@ -1,9 +1,11 @@
 import PageBanner from './PageBanner'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Card, Icon, Bars } from './ui'
 import { HourChart, Composition, Trend } from './Charts'
 import PlanEditor from './PlanEditor'
-import { readPlans, storageKey, scopeLabel } from './planStore'
+import PlanModal from './PlanModal'
+import { readPlans, storageKey } from './planStore'
+import './StrategyWorkspace.css'
 
 const fmt = value => Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 0 })
 const evidenceText = text => text.replace(/(\d[\d,]*(?:\.\d+)?)명/g, (_, n) => `${fmt(n.replaceAll(',', ''))}명`)
@@ -39,6 +41,13 @@ function FacilityProfile({ data, facility, filters }) {
 }
 
 export default function StrategyWorkspace({ data, filters, onViewPlans }) {
+  const planDialog = useRef(null)
+  const openPlan = () => {
+    const panel = planDialog.current
+    if (!panel) return
+    panel.removeAttribute('style')
+    panel.showModal()
+  }
   const [selectedGoal, setSelectedGoal] = useState(null)
   const [category, setCategory] = useState('전체')
   const [plans, setPlans] = useState(readPlans)
@@ -56,18 +65,19 @@ export default function StrategyWorkspace({ data, filters, onViewPlans }) {
   return <div className="strategy-workspace">
     <PageBanner eyebrow="FROM INSIGHT TO ACTION" title={<>데이터를 읽고,<br/>다음 운영을 설계하세요.</>} variant="strategy" label="운영전략 소개"/>
     <section className="strategy-point-panel"><div className="strategy-hero-point"><span><Icon name="bulb" size={17}/>이번 기간의 운영 포인트</span><strong>{peak ? peak.title : insufficient ? '분석 범위를 넓혀 확인해 주세요' : data.summary.population > 0 ? '현재 방문 패턴 유지·관찰' : '분석할 방문 인구가 없습니다'}</strong><p>{peak ? evidenceText(peak.evidence) : insufficient ? '관측일과 분석 기간이 충분하지 않아 운영 패턴을 확정하지 않았습니다.' : data.summary.population > 0 ? '운영 조정 기준을 넘는 신호가 없어 전략을 일괄 생성하지 않았습니다.' : '시설·분석 기간·관객 조건을 변경해 보세요.'}</p></div></section>
-    <div className="workflow-guide" aria-label="전략을 실행 계획으로 연결하는 순서">
-      <div className="workflow-guide-title"><strong>운영 개선은 이렇게 진행해요</strong><span>추천 전략을 검토하고 실행을 기록하세요</span></div>
-      <ol className="workflow-guide-steps">
-        <li><span>01</span><div><strong>근거 확인</strong><small>데이터에서 발견한 운영 신호</small></div></li>
-        <li><span>02</span><div><strong>실행 계획 수립</strong><small>목적·담당자·완료 기준 정하기</small></div></li>
-        <li><span>03</span><div><strong>진행·결과 관리</strong><small>실행 후 관찰한 변화 기록</small></div></li>
-      </ol>
-    </div>
     <FacilityProfile data={data} facility={filters.facility} filters={filters}/>
     <div className="strategy-category-tabs" role="group" aria-label="전략 분류">{['전체', ...Object.keys(categories)].map(value => <button key={value} aria-pressed={category === value} className={category === value ? 'selected' : ''} onClick={() => { setCategory(value); setSelectedGoal(null) }}>{value}<span>{items.filter(row => value === '전체' || categories[value].includes(row.goal)).length}</span></button>)}</div>
-    {items.length ? <div className="strategy-workbench"><aside className="strategy-picker" aria-label="운영 전략 선택"><div className="strategy-list-heading"><h3>데이터 기반 운영 제안</h3><span>{visible.length}개</span></div>{visible.map((strategy, index) => <button key={strategy.goal} className={`strategy-select-card ${selected.goal === strategy.goal ? 'selected' : ''}`} aria-pressed={selected.goal === strategy.goal} onClick={() => setSelectedGoal(strategy.goal)}><span className="strategy-select-top"><span className="strategy-select-icon"><Icon name={icons[strategy.goal]} size={21}/></span><small>0{index + 1} / {strategy.goal}</small><Icon name="arrow" size={16}/></span><strong>{strategy.title}</strong><p>{evidenceText(strategy.evidence)}</p><span className="strategy-select-bottom">근거 확인하고 계획 세우기 <span>→</span></span></button>)}<p className="strategy-picker-note">전략 순서는 검토 항목의 분류이며 효과나 성공 확률의 순위가 아닙니다.</p></aside>
-      {selected ? <section className="strategy-detail" aria-label="선택 전략 상세" key={id}><div className="strategy-detail-heading"><span className="eyebrow">{selected.goal}</span><h2>{selected.title}</h2><p>{scopeLabel(scope)}</p></div><div className="strategy-evidence"><span>① 전략 제안 근거</span><strong>{evidenceText(selected.evidence)}</strong></div><Evidence strategy={selected} data={data}/><div className="strategy-action-copy"><h3><Icon name="bulb" size={16}/>② 권장 실행 방향</h3><p>{selected.action}</p><div><span>점검할 지표</span><b>{selected.metric}</b></div></div><PlanEditor {...{ id, scope }} strategy={selected} record={plans[id]} onSave={save} onViewPlans={onViewPlans}/></section> : <div className="card empty">현재 조건에 해당하는 분류의 전략이 없습니다. 다른 분류를 선택하거나 시설·기간을 변경해 주세요.</div>}
+    {items.length ? <div className="strategy-workbench"><section className="strategy-picker" aria-label="운영 전략 선택"><div className="strategy-list-heading"><h3>데이터 기반 운영 제안</h3></div><div className="strategy-proposal-grid">{visible.map((strategy, index) => <button key={strategy.goal} className={`strategy-select-card ${selected.goal === strategy.goal ? 'selected' : ''}`} aria-pressed={selected.goal === strategy.goal} onClick={() => setSelectedGoal(strategy.goal)}><span className="strategy-select-top"><span className="strategy-select-icon"><Icon name={icons[strategy.goal]} size={21}/></span><small>0{index + 1} / {strategy.goal}</small><Icon name="arrow" size={16}/></span><strong>{strategy.title}</strong><p>{evidenceText(strategy.evidence)}</p><span className="strategy-select-bottom">근거 확인하고 계획 세우기 <span>→</span></span></button>)}</div></section>
+      {selected ? <section className="strategy-detail" aria-label="선택 전략 상세" key={id}><div className="strategy-detail-heading"><span className="eyebrow">{selected.goal}</span><h2>{selected.title}</h2><dl className="strategy-scope" aria-label="선택 전략의 분석 조건">
+          <div className="strategy-scope-facility"><dt><Icon name="museum" size={16}/>시설</dt><dd>{scope.facility || '전체 시설'}</dd></div>
+          <div><dt><Icon name="calendar" size={16}/>분석 기간</dt><dd><time dateTime={scope.start_date}>{scope.start_date}</time><span aria-hidden="true"> ~ </span><time dateTime={scope.end_date}>{scope.end_date}</time></dd></div>
+          <div><dt><Icon name="user" size={16}/>관객</dt><dd>{scope.age || '20·30대'} · {scope.sex === 'F' ? '여성' : scope.sex === 'M' ? '남성' : '전체 성별'}</dd></div>
+        </dl></div><div className="strategy-review-grid"><div className="strategy-review-evidence"><div className="strategy-evidence"><span>① 전략 제안 근거</span><strong>{evidenceText(selected.evidence)}</strong></div><Evidence strategy={selected} data={data}/></div><section className="strategy-action-copy" aria-label="권장 실행 방향">
+          <header className="strategy-action-heading"><span className="strategy-action-icon"><Icon name="bulb" size={23}/></span><div><span className="strategy-action-eyebrow">② 실행 제안</span><h3>권장 실행 방향</h3></div></header>
+          <div className="strategy-action-body"><span className="strategy-action-label">무엇을 할까요?</span><p>{selected.action}</p></div>
+          <div className="strategy-action-metric"><span className="strategy-metric-icon"><Icon name="chart" size={19}/></span><div><span>점검할 지표</span><strong>{selected.metric}</strong></div></div>
+          <footer className="strategy-action-footer"><button type="button" className="primary strategy-action-start" onClick={openPlan}><Icon name="file" size={16}/><span>{plans[id] ? '저장한 실행 계획 수정하기' : '이 전략으로 계획 만들기'}</span><Icon name="arrow" size={16}/></button></footer>
+        </section></div><PlanModal dialogRef={planDialog} title={selected.title}><PlanEditor {...{ id, scope }} strategy={selected} record={plans[id]} onSave={(key, record) => { const saved = save(key, record); if (saved) planDialog.current.close(); return saved }} onCancel={() => planDialog.current.close()} onViewPlans={onViewPlans}/></PlanModal></section> : <div className="card empty">현재 조건에 해당하는 분류의 전략이 없습니다. 다른 분류를 선택하거나 시설·기간을 변경해 주세요.</div>}
     </div> : <div className="card empty">{insufficient ? '관측이 부족해 전략 판정을 보류했습니다. 분석 기간을 넓혀 확인해 주세요.' : '현재 조건에서 운영 조정 기준에 해당하는 신호가 확인되지 않았습니다. 위의 전략 판정 근거에서 항목별 결과를 확인할 수 있습니다.'}</div>}
 
   </div>

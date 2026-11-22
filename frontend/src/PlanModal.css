@@ -1,0 +1,22 @@
+.plan-modal{position:fixed;inset:0;margin:auto;width:660px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:0;background:#fff;color:#294f43;border:1px solid #d7e5de;border-radius:16px;box-shadow:0 24px 90px #16363840;overflow:hidden}
+.plan-modal[open]{display:flex;flex-direction:column}
+.plan-modal::backdrop{background:#16363870;backdrop-filter:blur(3px)}
+.plan-modal-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;background:#f2f7f5;border-bottom:1px solid #d7e5de;cursor:grab;touch-action:none;user-select:none;flex-shrink:0}
+.plan-modal-heading:active{cursor:grabbing}
+.plan-modal-heading>div{min-width:0}
+.plan-modal-kicker{font-size:11px;color:#60786e}
+.plan-modal-heading h2{font-size:17px;line-height:1.6;margin:4px 0 0;overflow-wrap:anywhere}
+.plan-modal-heading>button{flex-shrink:0;cursor:pointer}
+.plan-modal-body{display:flex;overflow:hidden;padding:22px;min-height:0}
+.plan-modal .plan-editor{display:flex;flex-direction:column;min-height:0;width:100%;margin:0;padding:0;border:0}
+.plan-modal .plan-editor-heading{margin-bottom:18px;flex-shrink:0}
+.plan-modal .plan-editor form{display:flex;flex-direction:column;min-height:0}
+.plan-modal .plan-editor-fields{overflow:auto;overscroll-behavior:contain;min-height:0;padding:0 8px 4px 0;scroll-padding-block:12px}
+.plan-modal .plan-editor-heading .eyebrow{display:none}
+.plan-modal .plan-save-row{flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;background:#fff}
+.plan-modal .plan-save-row>button{margin:0;min-height:42px}
+.plan-modal .plan-view-link{flex-shrink:0}
+body:has(.plan-modal[open]){overflow:hidden}
+@media(max-width:600px){.plan-modal-heading{padding:14px 16px;gap:10px}.plan-modal-heading h2{font-size:15px}.plan-modal-body{padding:16px}.plan-modal .plan-fields{gap:12px}}
+@media(max-width:600px){.plan-modal .plan-editor-actions{flex-direction:row}.plan-modal .plan-editor-actions>button{width:auto;flex:1;padding:9px 10px;font-size:11px}}
+@media print{.plan-modal{display:none!important}}

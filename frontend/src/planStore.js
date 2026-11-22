@@ -1,4 +1,5 @@
 import { operatorProfile, operatorStorage } from './operatorProfile.js'
+import { validDate, dateString } from './eventStore.js'
 export const storageKey = operatorStorage('plans')
 export const steps = {
   '시간대 운영': ['선택 시간대의 운영 가능 여부 확인', '안내·해설 인력과 프로그램 구성', '프로그램 시범 운영', '같은 조건으로 시간대별 방문 변화 점검'],
@@ -11,6 +12,42 @@ export const steps = {
 }
 export const scopeLabel = scope => `${scope.facility || '전체 시설'} · ${scope.start_date} ~ ${scope.end_date} · ${scope.age || '20·30대'} · ${scope.sex === 'F' ? '여성' : scope.sex === 'M' ? '남성' : '전체 성별'}`
 export const status = (checks, workflowStatus) => ['준비', '진행 중', '완료'].includes(workflowStatus) ? workflowStatus : checks.every(Boolean) ? '완료' : checks.some(Boolean) ? '진행 중' : '준비'
+export const planPeriod = plan => ({ start: plan.executionStart || plan.due || '', end: plan.executionEnd || plan.due || '' })
+export const planPeriodLabel = plan => plan.executionStart && plan.executionEnd ? `${plan.executionStart} ~ ${plan.executionEnd}` : plan.due ? `기존 목표일 ${plan.due}` : '실행 기간 미지정'
+const optionalRange = (start, end) => (!start && !end) || (validDate(start) && validDate(end) && start <= end)
+export function validPlanSchedule(plan) {
+  return optionalRange(plan.executionStart, plan.executionEnd) && optionalRange(plan.actualStart, plan.actualEnd) &&
+    (plan.eventType === undefined || ['', '행사', '전시'].includes(plan.eventType)) &&
+    (plan.linkAnalysis === undefined || typeof plan.linkAnalysis === 'boolean') &&
+    (plan.analysisFacility === undefined || (typeof plan.analysisFacility === 'string' && plan.analysisFacility.length <= 100)) &&
+    (!plan.linkAnalysis || (['행사', '전시'].includes(plan.eventType) && (plan.analysisFacility || plan.scope?.facility) && validDate(plan.actualStart) && validDate(plan.actualEnd) && plan.actualStart <= plan.actualEnd && (Date.parse(plan.actualEnd) - Date.parse(plan.actualStart)) / 86400000 <= 365))
+}
+export function planAnalysisRange(plan) {
+  let start, end, dateBasis
+  if (plan.actualStart || plan.actualEnd) {
+    start = plan.actualStart; end = plan.actualEnd; dateBasis = '실제 실행 기간'
+  } else if (plan.executionStart || plan.executionEnd) {
+    start = plan.executionStart; end = plan.executionEnd; dateBasis = '등록된 실행 기간'
+  } else {
+    start = plan.due; end = plan.due; dateBasis = '기존 목표일(하루)'
+  }
+  if (!validDate(start) || !validDate(end) || start > end || end > dateString(new Date()) || (Date.parse(end) - Date.parse(start)) / 86400000 > 365) return null
+  return { start, end, dateBasis }
+}
+export function planAnalysisEvents(plans) {
+  return Object.entries(plans).flatMap(([id, plan]) => {
+    const range = planAnalysisRange(plan)
+    if (plan.archived || status(plan.checks, plan.workflowStatus) !== '완료' || !(plan.analysisFacility || plan.scope.facility) || !range) return []
+    return [{ id: `plan:${id}`, planId: id, title: plan.strategy.title, facility: plan.analysisFacility || plan.scope.facility, type: plan.eventType || '실행 계획', ...range, age: plan.scope.age, sex: plan.scope.sex, memo: plan.outcome || '' }]
+  })
+}
+export function planReviewItems(plans) {
+  const ready = new Map(planAnalysisEvents(plans).map(event => [event.planId, event]))
+  return Object.entries(plans).filter(([, plan]) => !plan.archived && status(plan.checks, plan.workflowStatus) === '완료').map(([id, plan]) => {
+    const event = ready.get(id)
+    return { id: `plan:${id}`, planId: id, title: plan.strategy.title, facility: plan.scope.facility || '전체 시설', type: plan.eventType || '실행 계획', start: '', end: '', age: plan.scope.age, sex: plan.scope.sex, memo: plan.outcome || '', ...event, analysisReady: !!event, workflowStatus: '완료' }
+  })
+}
 
 export function readPlans() {
   try {
@@ -23,7 +60,7 @@ export function readPlans() {
 
 export function validatePlan(plan) {
   const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
-  return plan && typeof plan === 'object' && typeof plan.strategy?.title === 'string' && plan.strategy.title.length <= 500 && Object.hasOwn(steps, plan.strategy.goal) && typeof plan.strategy.action === 'string' && plan.strategy.action.length <= 10000 && typeof plan.scope?.facility === 'string' && date(plan.scope.start_date) && date(plan.scope.end_date) && plan.scope.start_date <= plan.scope.end_date && ['', '20대', '30대'].includes(plan.scope.age) && ['', 'F', 'M'].includes(plan.scope.sex) && typeof plan.owner === 'string' && plan.owner.length <= 80 && typeof plan.memo === 'string' && plan.memo.length <= 2000 && (plan.purpose === undefined || (typeof plan.purpose === 'string' && plan.purpose.length <= 500)) && (plan.successCriteria === undefined || (typeof plan.successCriteria === 'string' && plan.successCriteria.length <= 500)) && (plan.due === '' || date(plan.due)) && Array.isArray(plan.checks) && plan.checks.length === 4 && plan.checks.every(value => typeof value === 'boolean') && typeof plan.updated_at === 'string' && !Number.isNaN(Date.parse(plan.updated_at)) && (plan.workflowStatus === undefined || ['준비', '진행 중', '완료'].includes(plan.workflowStatus)) && (plan.outcome === undefined || (typeof plan.outcome === 'string' && plan.outcome.length <= 2000)) && (plan.archived === undefined || typeof plan.archived === 'boolean')
+  return plan && typeof plan === 'object' && validPlanSchedule(plan) && typeof plan.strategy?.title === 'string' && plan.strategy.title.length <= 500 && Object.hasOwn(steps, plan.strategy.goal) && typeof plan.strategy.action === 'string' && plan.strategy.action.length <= 10000 && typeof plan.scope?.facility === 'string' && date(plan.scope.start_date) && date(plan.scope.end_date) && plan.scope.start_date <= plan.scope.end_date && ['', '20대', '30대'].includes(plan.scope.age) && ['', 'F', 'M'].includes(plan.scope.sex) && typeof plan.owner === 'string' && plan.owner.length <= 80 && typeof plan.memo === 'string' && plan.memo.length <= 2000 && (plan.purpose === undefined || (typeof plan.purpose === 'string' && plan.purpose.length <= 500)) && (plan.successCriteria === undefined || (typeof plan.successCriteria === 'string' && plan.successCriteria.length <= 500)) && (plan.due === '' || date(plan.due)) && Array.isArray(plan.checks) && plan.checks.length === 4 && plan.checks.every(value => typeof value === 'boolean') && typeof plan.updated_at === 'string' && !Number.isNaN(Date.parse(plan.updated_at)) && (plan.workflowStatus === undefined || ['준비', '진행 중', '완료'].includes(plan.workflowStatus)) && (plan.outcome === undefined || (typeof plan.outcome === 'string' && plan.outcome.length <= 2000)) && (plan.archived === undefined || typeof plan.archived === 'boolean')
 }
 
 export function parseBackup(text) {

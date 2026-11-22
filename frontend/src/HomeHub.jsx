@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon, Mascot } from './ui'
-import { readPlans, status } from './planStore'
+import { readPlans, status, planPeriod, planPeriodLabel } from './planStore'
 
 const fmt = value => Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 0 })
 const states = [{ label: '준비', color: '#87a9c1' }, { label: '진행 중', color: '#bd8b47' }, { label: '완료', color: '#176b68' }]
@@ -22,7 +22,7 @@ export default function HomeHub({ data, filters, onAnalyze, onStrategies, onPlan
   const counts = states.map(state => plans.filter(([, plan]) => status(plan.checks, plan.workflowStatus) === state.label).length)
   const total = plans.length
   const today = isoToday()
-  const scheduled = plans.filter(([, plan]) => status(plan.checks, plan.workflowStatus) !== '완료' && /^\d{4}-\d{2}-\d{2}$/.test(plan.due) && Number.isFinite(Date.parse(plan.due)))
+  const scheduled = plans.map(([id, plan]) => [id, { ...plan, due: planPeriod(plan).end }]).filter(([, plan]) => status(plan.checks, plan.workflowStatus) !== '완료' && /^\d{4}-\d{2}-\d{2}$/.test(plan.due) && Number.isFinite(Date.parse(plan.due)))
     .sort((a, b) => a[1].due.localeCompare(b[1].due) || a[0].localeCompare(b[0]))
   const overdue = scheduled.filter(([, plan]) => plan.due < today).length
   const featured = data.strategies[0]
@@ -42,10 +42,10 @@ export default function HomeHub({ data, filters, onAnalyze, onStrategies, onPlan
 
     <section className="home-plan-panel" aria-label="홈 실행 계획 현황"><div className="home-panel-heading"><div><span className="eyebrow">ACTION OVERVIEW</span><h2>실행 계획 현황</h2></div><button className="panel-link" onClick={() => onPlans()}>전체 보기<Icon name="arrow" size={14}/></button></div><div className="home-plan-body"><div className="plan-status-ring" style={{ background: ring }} role="img" aria-label={`실행 계획 전체 ${total}개, 준비 ${counts[0]}개, 진행 중 ${counts[1]}개, 완료 ${counts[2]}개`}><div><span>전체 계획</span><strong>{total}</strong><small>{total ? `${counts[2]}개 완료` : '아직 계획이 없어요'}</small></div></div><div className="home-state-list">{states.map((state, index) => <button key={state.label} onClick={() => onPlans(null, state.label)}><i style={{ background: state.color }}/><span>{state.label}</span><b>{counts[index]}</b><Icon name="arrow" size={13}/></button>)}</div></div><div className="home-plan-footer"><span>{scope} · 모든 기간</span>{total ? <span>완료율 {Math.round(counts[2] / total * 100)}%</span> : <button onClick={onStrategies}>첫 계획 만들기 →</button>}</div></section></div>
 
-    <section className="home-deadlines" aria-label="홈 목표일 목록"><div className="home-panel-heading"><div><span className="eyebrow">UPCOMING TASKS</span><h2>다가오는 목표일{overdue > 0 && <span className="overdue-count">기한 지난 계획 {overdue}개</span>}</h2></div><button className="panel-link" onClick={() => onPlans()}>계획 관리<Icon name="arrow" size={14}/></button></div>{scheduled.length ? <div className="home-deadline-list">{scheduled.slice(0, 4).map(([id, plan]) => {
+    <section className="home-deadlines" aria-label="홈 실행 종료일 목록"><div className="home-panel-heading"><div><span className="eyebrow">UPCOMING TASKS</span><h2>다가오는 종료일{overdue > 0 && <span className="overdue-count">기한 지난 계획 {overdue}개</span>}</h2></div><button className="panel-link" onClick={() => onPlans()}>계획 관리<Icon name="arrow" size={14}/></button></div>{scheduled.length ? <div className="home-deadline-list">{scheduled.slice(0, 4).map(([id, plan]) => {
       const days = dayDifference(plan.due, today)
       const label = days < 0 ? `D+${Math.abs(days)}` : days === 0 ? 'D-day' : `D−${days}`
-      return <button className="home-deadline-row" key={id} onClick={() => onPlans(id)}><span className="deadline-date"><small>{Number(plan.due.slice(5, 7))}월</small><b>{Number(plan.due.slice(8))}</b></span><span className="deadline-copy"><strong>{plan.strategy.title}</strong><small>{plan.scope.facility || '전체 시설'} · {plan.owner || '담당자 미지정'}</small></span><span className="deadline-status">{status(plan.checks, plan.workflowStatus)}</span><span className={`deadline-countdown ${days < 0 ? 'late' : days <= 7 ? 'soon' : ''}`}>{label}</span><Icon name="arrow" size={16}/></button>
-    })}</div> : <div className="home-deadline-empty"><span><Icon name="calendar" size={25}/></span><div><h3>다가오는 목표일이 없습니다.</h3><p>계획에 목표일을 정하면 여기에서 바로 확인할 수 있어요.</p></div><button className="outline" onClick={() => onPlans()}>실행 계획 보기</button></div>}</section>
+      return <button className="home-deadline-row" key={id} onClick={() => onPlans(id)}><span className="deadline-date"><small>{Number(plan.due.slice(5, 7))}월</small><b>{Number(plan.due.slice(8))}</b></span><span className="deadline-copy"><strong>{plan.strategy.title}</strong><small>{plan.scope.facility || '전체 시설'} · {planPeriodLabel(plan)}</small></span><span className="deadline-status">{status(plan.checks, plan.workflowStatus)}</span><span className={`deadline-countdown ${days < 0 ? 'late' : days <= 7 ? 'soon' : ''}`}>{label}</span><Icon name="arrow" size={16}/></button>
+    })}</div> : <div className="home-deadline-empty"><span><Icon name="calendar" size={25}/></span><div><h3>다가오는 종료일이 없습니다.</h3><p>실행 기간의 종료일을 정하면 여기에서 확인할 수 있어요.</p></div><button className="outline" onClick={() => onPlans()}>실행 계획 보기</button></div>}</section>
   </div>
 }
