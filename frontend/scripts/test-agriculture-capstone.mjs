@@ -5,6 +5,7 @@ import { CAPSTONE_PREFIX, CAPSTONE_VERSION, CAPSTONE_SOURCE, createCapstonePlans
 import { buildAgricultureCapstoneAnalysis } from '../src/agricultureCapstoneAnalysis.js'
 import { planAnalysisEvents, validatePlan, parseBackup } from '../src/planStore.js'
 import { validateEvent } from '../src/eventStore.js'
+import { buildExpectedEffects } from '../src/eventEffectInsights.js'
 
 function storage(initial = {}) {
   const map = new Map(Object.entries(initial))
@@ -98,4 +99,15 @@ test('ordinary records, another museum and operational notes never receive synth
   assert.equal(buildAgricultureCapstoneAnalysis({ ...event, facility: '국립극장' }), null)
   assert.equal(buildAgricultureCapstoneAnalysis({ ...event, demoScenario: 'unknown' }), null)
   assert.equal(buildAgricultureCapstoneAnalysis(createCapstoneEvents()[0]), null)
+})
+test('expected-effect suggestions use observed changes and do not promise uplift for a decline', () => {
+  const data = buildAgricultureCapstoneAnalysis(planAnalysisEvents(createCapstonePlans())[0])
+  const effects = buildExpectedEffects(data)
+  assert.equal(effects.length, 3)
+  assert.match(effects[0].evidence, /전후 변화 \+24.1%/)
+  assert.match(effects[1].evidence, /30대 여성/)
+  assert.match(buildExpectedEffects({ ...data, change_percent: -20 })[0].title, /방문 회복/)
+  assert.match(buildExpectedEffects({ ...data, change_percent: 0 })[0].title, /현재 방문 수준/)
+  assert.deepEqual(buildExpectedEffects({ ...data, comparison_available: false }), [])
+  assert.deepEqual(buildExpectedEffects({ ...data, change_percent: null }), [])
 })

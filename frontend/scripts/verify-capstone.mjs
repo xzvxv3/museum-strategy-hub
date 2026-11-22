@@ -56,15 +56,21 @@ try {
   await page.screenshot({ path: '/tmp/agriculture-capstone-calendar.png', fullPage: true })
 
   await page.getByRole('button', { name: '행사 전후 분석', exact: true }).click()
-  assert.equal(await page.getByRole('button', { name: '실제 행사 분석', exact: true }).getAttribute('aria-pressed'), 'true')
+  assert.equal(await page.getByRole('button', { name: '실제 행사 분석', exact: true }).count(), 0)
+  assert.equal(await page.getByRole('button', { name: '예시 데이터 분석', exact: true }).count(), 0)
   assert.equal(await page.locator('.event-list-item').count(), 2)
   const changes = []
   for (const plan of templates.filter(item => item.workflowStatus === '완료')) {
     await page.locator('.event-list-item').filter({ hasText: plan.strategy.title }).click()
-    await page.locator('.capstone-data-notice').waitFor()
+    await page.locator('.event-result').waitFor()
+    assert.equal(await page.locator('.capstone-analysis-hint').count(), 1)
+    assert.equal(await page.locator('.capstone-data-notice,.event-source-badge.synthetic').count(), 0)
     const value = Number((await page.locator('.event-result strong').textContent()).replaceAll(/[+%,]/g, ''))
     assert.ok(value > 10 && value < 30)
     changes.push(value)
+    assert.equal(await page.locator('.event-expected-effects').count(), 1)
+    assert.equal(await page.locator('.expected-effect').count(), 3)
+    assert.ok((await page.locator('.expected-effect-evidence').first().textContent()).includes(`+${value}%`))
     assert.equal(await page.locator('.event-period').count(), 3)
     await page.getByLabel('전후 비교 기간', { exact: true }).selectOption('14')
     assert.ok((await page.locator('.event-period.before').textContent()).includes('14'))
@@ -88,6 +94,8 @@ try {
   await page.getByRole('button', { name: '실행 계획 저장', exact: true }).click()
   await page.getByRole('button', { name: '로그아웃', exact: true }).click()
   await page.getByRole('button', { name: '농업박물관 운영자 화면 시작', exact: true }).click()
+  await page.getByRole('button', { name: '홈', exact: true }).waitFor()
+  await page.getByRole('button', { name: '홈', exact: true }).click()
   await page.locator('.home-total-value').waitFor()
   const edited = await page.evaluate(prefix => Object.values(JSON.parse(localStorage.getItem(`${prefix}:plans`))).find(plan => plan.strategy.goal === '평일·주말 운영'), CAPSTONE_PREFIX)
   assert.ok(edited.memo.includes('팀원이 이어서 작성한 시연 메모'))
@@ -97,6 +105,23 @@ try {
   await page.setViewportSize({ width: 390, height: 844 })
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   await page.screenshot({ path: '/tmp/agriculture-capstone-mobile.png', fullPage: true })
+
+  // Real records share the same screen and retain their real API and source label.
+  await page.evaluate(prefix => {
+    const events = JSON.parse(localStorage.getItem(`${prefix}:events`))
+    events.push({ id: 'real-visit-check', title: '실제 집계 경로 검증', facility: '농업박물관', type: '행사', start: '2025-06-01', end: '2025-06-07', age: '', sex: '', memo: 'API 경로 검증용 일정' })
+    localStorage.setItem(`${prefix}:events`, JSON.stringify(events))
+  }, CAPSTONE_PREFIX)
+  await page.reload()
+  await page.getByRole('button', { name: '행사 전후 분석', exact: true }).click()
+  assert.equal(await page.locator('.event-list-item').count(), 3)
+  const realCard = page.locator('.event-list-item').filter({ hasText: '실제 집계 경로 검증' })
+  assert.equal(await realCard.locator('.event-source-badge.observed').textContent(), '실제 방문 데이터')
+  await realCard.click()
+  await page.locator('.event-result').waitFor()
+  assert.equal(await page.locator('.capstone-data-notice').count(), 0)
+  assert.equal(await page.locator('.event-detail .event-source-badge.observed').count(), 1)
+  assert.ok(realEventRequests.length > 0)
 
   // A teammate's fresh browser receives the baseline, not this browser's edits.
   const teammate = await browser.newContext()
@@ -108,7 +133,7 @@ try {
   assert.equal(Object.keys(baseline).length, 3)
   assert.ok(Object.values(baseline).every(plan => !plan.memo.includes('팀원이 이어서 작성한 시연 메모')))
   assert.deepEqual(errors, [])
-  console.log(JSON.stringify({ result: 'PASS', plans: '완료 2 · 준비 1', calendarNotes: 4, syntheticChanges: changes, realEventRequests: realEventRequests.length, editAndLoginPersistence: true, freshTeammateSeed: true, screenshots: '/tmp/agriculture-capstone-*.png' }))
+  console.log(JSON.stringify({ result: 'PASS', plans: '완료 2 · 준비 1', calendarNotes: 4, syntheticChanges: changes, syntheticEventApiRequests: 0, realEventApiRequests: realEventRequests.length, editAndLoginPersistence: true, freshTeammateSeed: true, screenshots: '/tmp/agriculture-capstone-*.png' }))
 } finally {
   await browser.close()
 }
