@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import { Icon, Mascot } from './ui'
 import './Login.css'
-import { operatorProfile, demoOperators, quickOperators, startOperatorDemo } from './operatorProfile.js'
+import { operatorProfile, demoOperators, startOperatorDemo } from './operatorProfile.js'
 
 export default function Login({ style, onLogin, error, attempts }) {
   const [showPassword, setShowPassword] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
   const [demoError, setDemoError] = useState('')
-  const [demoFacility, setDemoFacility] = useState(operatorProfile.facility || quickOperators[0].facility)
+  const otherFacilities = demoOperators.filter(operator => operator.facility !== '농업박물관')
+  const [demoFacility, setDemoFacility] = useState(operatorProfile.facility !== '농업박물관' ? operatorProfile.facility : '')
+  const startDemo = facility => {
+    try { startOperatorDemo(facility) }
+    catch { setDemoError('데모 시작에 필요한 브라우저 저장 공간을 사용할 수 없습니다. 저장 공간 설정을 확인해 주세요.') }
+  }
   const savedId = localStorage.getItem('culture-id') === 'root' ? 'root' : ''
 
   return <div className="culture-login" style={style}>
@@ -48,16 +53,19 @@ export default function Login({ style, onLogin, error, attempts }) {
         </form>
         <aside className="login-demo" aria-label="데모 계정 안내">
           <div className="login-demo-heading"><span><Icon name="compass" size={18}/>운영자 화면 체험하기</span><span className="login-demo-badge">DEMO</span></div>
-          <p>박물관·전시관 등 전체 {demoOperators.length}개 시설 중 담당 시설을 선택하세요.</p>
-          <div className="login-quick-heading">빠른 선택 <span>관측일이 충분한 시연 추천 시설</span></div>
-          <div className="login-quick-choices">{quickOperators.map(operator => <button key={operator.facility} type="button" aria-pressed={demoFacility === operator.facility} onClick={() => setDemoFacility(operator.facility)}><strong>{operator.facility}</strong></button>)}</div>
-          <div className="login-facility-results">전체 시설 · {demoOperators.length}곳 · 가나다순</div>
-          <div className="login-facility-list" role="group" aria-label="운영자 데모 시설 선택">{demoOperators.map(operator => <label key={operator.facility} className={demoFacility === operator.facility ? 'selected' : ''}><input type="radio" name="demo-facility" value={operator.facility} checked={demoFacility === operator.facility} onChange={() => setDemoFacility(operator.facility)}/><span>{operator.facility}</span>{demoFacility === operator.facility && <Icon name="check" size={16}/>}</label>)}</div>
-
-          <button type="button" className="login-demo-start" onClick={() => {
-            try { startOperatorDemo(demoFacility) }
-            catch { setDemoError('데모 시작에 필요한 브라우저 저장 공간을 사용할 수 없습니다. 저장 공간 설정을 확인해 주세요.') }
-          }}><span>{demoFacility} 운영자 화면 시작</span><Icon name="arrow" size={17}/></button>
+          <section className="login-featured-demo" aria-labelledby="featured-demo-title">
+            <div className="login-featured-top"><span className="login-featured-icon"><Icon name="museum" size={27}/></span><span className="login-featured-badge">캡스톤 대표 시연</span></div>
+            <h3 id="featured-demo-title">농업박물관</h3>
+            <p>분석부터 실행 계획, 행사 전후 비교까지<br/>준비된 데이터로 한 번에 살펴보세요.</p>
+            <div className="login-featured-highlights"><span>전체 기간 분석</span><span>실행 계획 3개</span><span>행사 분석 2개</span></div>
+            <button type="button" className="login-demo-start login-featured-start" onClick={() => startDemo('농업박물관')}><span>농업박물관 운영자 화면 시작</span><Icon name="arrow" size={18}/></button>
+          </section>
+          <details className="login-other-facilities">
+            <summary><span>다른 시설에서 체험하기</span><small>{otherFacilities.length}곳</small></summary>
+            <div className="login-facility-results">담당 시설 선택 · 가나다순</div>
+            <div className="login-facility-list" role="group" aria-label="운영자 데모 시설 선택">{otherFacilities.map(operator => <label key={operator.facility} className={demoFacility === operator.facility ? 'selected' : ''}><input type="radio" name="demo-facility" value={operator.facility} checked={demoFacility === operator.facility} onChange={() => setDemoFacility(operator.facility)}/><span>{operator.facility}</span>{demoFacility === operator.facility && <Icon name="check" size={16}/>}</label>)}</div>
+            <button type="button" className="login-demo-start login-other-start" disabled={!demoFacility} onClick={() => startDemo(demoFacility)}><span>{demoFacility ? `${demoFacility} 운영자 화면 시작` : '체험할 시설을 선택하세요'}</span><Icon name="arrow" size={17}/></button>
+          </details>
           {demoError && <p className="login-error" role="alert">{demoError}</p>}
           <p className="login-root-note">총괄 운영자는 상단에서 <b>root / 1234</b>로 로그인할 수 있습니다.</p>
         </aside>
