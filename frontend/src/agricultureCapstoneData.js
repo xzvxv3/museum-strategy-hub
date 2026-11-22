@@ -5,12 +5,17 @@ export const CAPSTONE_SOURCE = 'agriculture-capstone-synthetic-v1'
 export const CAPSTONE_VERSION = '2026-11-capstone-v1'
 export const CAPSTONE_PREFIX = `museum-flow-operator:${CAPSTONE_FACILITY}`
 export const CAPSTONE_SCOPE = { facility: CAPSTONE_FACILITY, start_date: '2025-01-01', end_date: '2025-12-31', age: '', sex: '' }
+export const CAPSTONE_SCHEDULE_VERSION = 'weekday-2026-11-12-v1'
+export const CAPSTONE_WEEKDAY_PERIOD = { start: '2026-11-12', end: '2026-11-23' }
 
 // Fictional operations and outcomes for a capstone presentation. Never actual event records.
 export const CAPSTONE_SCENARIOS = {
   'autumn-recovery': { baseline: 200, duringRate: 1.48, afterRate: 1.24, targetAge: '30대', targetSex: 'F' },
   'weekday-experience': { baseline: 260, duringRate: 1.36, afterRate: 1.16, targetAge: '30대', targetSex: 'F' },
 }
+export const isAgricultureCapstoneScenario = value => value?.demoSource === CAPSTONE_SOURCE &&
+  Object.hasOwn(CAPSTONE_SCENARIOS, value.demoScenario || '') &&
+  (value.analysisFacility || value.facility || value.scope?.facility) === CAPSTONE_FACILITY
 const templates = {
   '방문 규모 점검': {
     owner: '전시홍보팀', executionStart: '2026-04-06', executionEnd: '2026-04-19', workflowStatus: '완료', eventType: '행사', demoScenario: 'autumn-recovery',
@@ -20,7 +25,7 @@ const templates = {
     outcome: '시연 가정: 안내물 3종 개편과 체험 안내 4회를 마쳤다. 가상 방문 자료에서는 행사 후 요일 보정 일평균이 행사 전보다 약 24% 높아진 상황을 구성했다. 실제 측정 성과가 아니며 캠페인의 인과적 효과를 입증하지 않는다.',
   },
   '평일·주말 운영': {
-    owner: '교육체험팀', executionStart: '2026-09-07', executionEnd: '2026-09-18', workflowStatus: '완료', eventType: '행사', demoScenario: 'weekday-experience',
+    owner: '교육체험팀', executionStart: CAPSTONE_WEEKDAY_PERIOD.start, executionEnd: CAPSTONE_WEEKDAY_PERIOD.end, workflowStatus: '완료', eventType: '행사', demoScenario: 'weekday-experience',
     purpose: '상대적으로 높은 평일 수요에 맞춰 점심 이후 농기구 해설과 짧은 곡물 체험을 연계한다. 30대 관객을 포함한 방문자의 안내 접근성을 점검한다.',
     successCriteria: '평일 해설·체험을 8회 운영하고 안내 인력 2명을 배치한다. 전후 각 28일의 방문 흐름과 20·30대 관객 구성을 같은 기준으로 비교한다.',
     memo: '캡스톤 시연용 계획입니다. 해설은 13시·15시를 중심으로 운영하고, 체험은 약 15분으로 구성합니다. 휴관일과 중복 일정은 별도로 확인하며 주말 운영 축소를 전제로 하지 않습니다.',

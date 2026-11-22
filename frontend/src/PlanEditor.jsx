@@ -3,9 +3,11 @@ import { Icon } from './ui'
 import { validDate, dateString } from './eventStore'
 import { status } from './planStore'
 import DateRangePicker from './DateRangePicker'
+import { isAgricultureCapstoneScenario } from './agricultureCapstoneData'
 
 export default function PlanEditor({ id, strategy, scope, record, onSave, onViewPlans, onCancel }) {
   const draftKey = `culture-plan-draft:${id}`
+  const syntheticRecord = isAgricultureCapstoneScenario(record)
   const [draft] = useState(() => { try { const value = JSON.parse(sessionStorage.getItem(draftKey)); return value?.base === (record?.updated_at || '') ? value : null } catch { return null } })
   const [owner, setOwner] = useState(draft?.owner ?? record?.owner ?? '')
   const [executionStart, setExecutionStart] = useState(draft?.executionStart ?? record?.executionStart ?? '')
@@ -29,7 +31,7 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
       setMessage('실행 시작일과 종료일을 확인해 주세요. 종료일은 시작일 이후여야 합니다.')
       return
     }
-    if ((actualStart || actualEnd) && (!validDate(actualStart) || !validDate(actualEnd) || actualStart > actualEnd || actualEnd > dateString(new Date()))) {
+    if ((actualStart || actualEnd) && (!validDate(actualStart) || !validDate(actualEnd) || actualStart > actualEnd || (!syntheticRecord && actualEnd > dateString(new Date())))) {
       setMessage('실제 실행 기간을 확인해 주세요. 종료일은 시작일 이후이며 오늘까지의 날짜여야 합니다.')
       return
     }
@@ -59,7 +61,7 @@ export default function PlanEditor({ id, strategy, scope, record, onSave, onView
       </div>
       <label>실행 메모<textarea name="plan_memo" value={memo} maxLength={2000} rows={3} placeholder="실행 방법과 점검할 내용을 적어보세요." onChange={event => { setMemo(event.target.value); dirty() }}/><span className="print-memo">{memo || '—'}</span></label>
       {(workflowStatus === '진행 중' || workflowStatus === '완료') && <label>실행 결과 및 관찰 사항<textarea name="plan_outcome" value={outcome} maxLength={2000} rows={3} placeholder="예: 평일 해설을 2회 운영했고 방문 인구 추이를 검토했다. 효과의 인과관계는 확인되지 않았다." onChange={event => { setOutcome(event.target.value); dirty() }}/></label>}
-      {eventType && (workflowStatus === '진행 중' || workflowStatus === '완료') && <fieldset className="plan-date-range"><legend>실제 실행 기간</legend><DateRangePicker label="실제 실행 기간" start={actualStart} end={actualEnd} min="1901-01-01" max={dateString(new Date())} allowAll={false} startName="plan_actual_start" endName="plan_actual_end" onChange={(start, end) => { setActualStart(start); setActualEnd(end); dirty() }}/><p className="plan-analysis-hint">완료된 행사·전시는 실제 실행 기간을 기준으로 행사 전후 분석에 자동 표시됩니다.</p></fieldset>}
+      {eventType && (workflowStatus === '진행 중' || workflowStatus === '완료') && <fieldset className="plan-date-range"><legend>실제 실행 기간</legend><DateRangePicker label="실제 실행 기간" start={actualStart} end={actualEnd} min="1901-01-01" max={syntheticRecord ? '2099-12-31' : dateString(new Date())} allowAll={false} startName="plan_actual_start" endName="plan_actual_end" onChange={(start, end) => { setActualStart(start); setActualEnd(end); dirty() }}/><p className="plan-analysis-hint">완료된 행사·전시는 실제 실행 기간을 기준으로 행사 전후 분석에 자동 표시됩니다.</p></fieldset>}
       {message && <p className="plan-form-error" role="alert">{message}</p>}
       </div>
       <div className="plan-save-row plan-editor-actions" aria-label="실행 계획 관리">

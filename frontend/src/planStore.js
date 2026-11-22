@@ -1,5 +1,6 @@
 import { operatorProfile, operatorStorage } from './operatorProfile.js'
 import { validDate, dateString } from './eventStore.js'
+import { isAgricultureCapstoneScenario } from './agricultureCapstoneData.js'
 export const storageKey = operatorStorage('plans')
 export const steps = {
   '시간대 운영': ['선택 시간대의 운영 가능 여부 확인', '안내·해설 인력과 프로그램 구성', '프로그램 시범 운영', '같은 조건으로 시간대별 방문 변화 점검'],
@@ -31,7 +32,7 @@ export function planAnalysisRange(plan) {
   } else {
     start = plan.due; end = plan.due; dateBasis = '기존 목표일(하루)'
   }
-  if (!validDate(start) || !validDate(end) || start > end || end > dateString(new Date()) || (Date.parse(end) - Date.parse(start)) / 86400000 > 365) return null
+  if (!validDate(start) || !validDate(end) || start > end || (end > dateString(new Date()) && !isAgricultureCapstoneScenario(plan)) || (Date.parse(end) - Date.parse(start)) / 86400000 > 365) return null
   return { start, end, dateBasis }
 }
 export function planAnalysisEvents(plans) {

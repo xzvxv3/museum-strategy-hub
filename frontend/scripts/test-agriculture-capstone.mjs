@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { initializeAgricultureCapstone } from '../src/agricultureCapstoneSeed.js'
-import { CAPSTONE_PREFIX, CAPSTONE_VERSION, CAPSTONE_SOURCE, createCapstonePlans, createCapstoneEvents } from '../src/agricultureCapstoneData.js'
+import { CAPSTONE_PREFIX, CAPSTONE_VERSION, CAPSTONE_SOURCE, CAPSTONE_SCHEDULE_VERSION, createCapstonePlans, createCapstoneEvents } from '../src/agricultureCapstoneData.js'
 import { buildAgricultureCapstoneAnalysis } from '../src/agricultureCapstoneAnalysis.js'
 import { planAnalysisEvents, validatePlan, parseBackup } from '../src/planStore.js'
 import { validateEvent } from '../src/eventStore.js'
@@ -99,6 +99,41 @@ test('ordinary records, another museum and operational notes never receive synth
   assert.equal(buildAgricultureCapstoneAnalysis({ ...event, facility: '국립극장' }), null)
   assert.equal(buildAgricultureCapstoneAnalysis({ ...event, demoScenario: 'unknown' }), null)
   assert.equal(buildAgricultureCapstoneAnalysis(createCapstoneEvents()[0]), null)
+})
+test('old weekday schedule migrates once without replacing edits, drafts or other records', () => {
+  const plans = createCapstonePlans()
+  const id = Object.keys(plans).find(key => plans[key].demoScenario === 'weekday-experience')
+  const other = Object.keys(plans).find(key => plans[key].demoScenario === 'autumn-recovery')
+  Object.assign(plans[id], { executionStart: '2026-10-12', executionEnd: '2026-10-23', actualStart: '2026-10-12', actualEnd: '2026-10-23', due: '2026-10-23', memo: '저장한 팀 메모' })
+  const local = storage({ [`${CAPSTONE_PREFIX}:capstone-version`]: CAPSTONE_VERSION, [`${CAPSTONE_PREFIX}:plans`]: JSON.stringify(plans), [`${CAPSTONE_PREFIX}:events`]: '기존 일정 유지', [`${CAPSTONE_PREFIX}:filters`]: '기존 필터 유지' })
+  const session = activeSession()
+  session.setItem(`culture-plan-draft:${id}`, JSON.stringify({ base: plans[id].updated_at, memo: '작성 중인 팀 메모' }))
+  assert.equal(initializeAgricultureCapstone(profile, local, session).status, 'updated')
+  const next = JSON.parse(local.getItem(`${CAPSTONE_PREFIX}:plans`))
+  assert.equal(next[id].executionStart, '2026-11-12')
+  assert.equal(next[id].executionEnd, '2026-11-23')
+  assert.equal(next[id].actualEnd, '2026-11-23')
+  assert.equal(next[id].due, '2026-11-23')
+  assert.equal(next[id].memo, '저장한 팀 메모')
+  assert.deepEqual(next[other], plans[other])
+  assert.equal(local.getItem(`${CAPSTONE_PREFIX}:events`), '기존 일정 유지')
+  assert.equal(local.getItem(`${CAPSTONE_PREFIX}:filters`), '기존 필터 유지')
+  assert.equal(local.getItem(`${CAPSTONE_PREFIX}:capstone-schedule-version`), CAPSTONE_SCHEDULE_VERSION)
+  const draft = JSON.parse(session.getItem(`culture-plan-draft:${id}`))
+  assert.equal(draft.memo, '작성 중인 팀 메모')
+  assert.equal(draft.base, next[id].updated_at)
+  assert.equal(draft.executionStart, '2026-11-12')
+  next[id].executionStart = '2026-11-13'
+  local.setItem(`${CAPSTONE_PREFIX}:plans`, JSON.stringify(next))
+  assert.equal(initializeAgricultureCapstone(profile, local, session).status, 'existing')
+  assert.equal(JSON.parse(local.getItem(`${CAPSTONE_PREFIX}:plans`))[id].executionStart, '2026-11-13')
+})
+test('future fictional dates are allowed only for the explicitly marked capstone scenario', () => {
+  const plan = Object.values(createCapstonePlans()).find(plan => plan.demoScenario === 'weekday-experience')
+  const future = { ...plan, actualStart: '2027-01-01', actualEnd: '2027-01-12' }
+  assert.equal(planAnalysisEvents({ future }).length, 1)
+  assert.equal(planAnalysisEvents({ future: { ...future, demoSource: undefined } }).length, 0)
+  assert.equal(planAnalysisEvents({ future: { ...future, scope: { ...future.scope, facility: '국립극장' } } }).length, 0)
 })
 test('expected-effect suggestions use observed changes and do not promise uplift for a decline', () => {
   const data = buildAgricultureCapstoneAnalysis(planAnalysisEvents(createCapstonePlans())[0])
