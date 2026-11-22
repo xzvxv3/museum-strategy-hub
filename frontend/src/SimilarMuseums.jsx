@@ -29,7 +29,6 @@ function GroupResult({ data: res, facility }) {
   const groupName = g => isSelectedK ? res.groups.find(x => x.id === Number(g))?.name : `그룹 ${Number(g) + 1}`
 
   return <section className="cluster-page" aria-label="유사 박물관 그룹">
-    <div className="cluster-method-note"><details className="cluster-method-details"><summary>분석 방법</summary><p>시설마다 방문 패턴 비율, 주말·저녁·새벽 방문 비율, 계절에 따른 변화, 성별·연령 구성, 함께 방문하는 시설 정보를 모아 비교 기준을 맞춘(표준화) 뒤, Ward 계층 군집으로 비슷한 시설끼리 묶었습니다. 분석 범위(기간·연령·성별)는 방문 패턴 탭의 분석을 따르며, 값은 실제 입장객이 아닌 <b>감지 인구</b> 기준입니다.</p></details></div>
 
     <div className="chart-grid">
       <Card title={`${facility ? josa(facility, '과', '와') : '우리 시설과'} 닮은 박물관 그룹`} className="cluster-summary"
@@ -45,7 +44,6 @@ function GroupResult({ data: res, facility }) {
           </>}
       </Card>
       <Card title="가장 비슷한 박물관 순위" help="여러 특징을 함께 비교해 차이가 작은 순서대로 보여 줍니다. ‘차이’ 값이 작을수록 우리 시설과 비슷합니다. 그룹이 달라도 순위에 오를 수 있습니다.">
-        <p className="card-sub">위에 있을수록 우리 시설과 방문 특성이 비슷한 박물관입니다.</p>
         {!facility ? <p className="empty">시설을 선택하면 가장 비슷한 박물관 5곳을 보여 드립니다.</p>
           : !myGroup ? <p className="empty">{view.reason}</p>
             : <DataTable head={['순위', '박물관', '차이 (작을수록 비슷)', '같은 그룹']} rows={view.similar.map((s, i) => [i + 1, s.name, s.distance.toFixed(2), s.same_group ? <Badge key="g" tone="green">같은 그룹</Badge> : '—'])}/>}
@@ -53,7 +51,6 @@ function GroupResult({ data: res, facility }) {
     </div>
 
     {view?.diff_vs_group?.length > 0 && <Card title={`${facility} vs 같은 그룹 박물관`} help="같은 그룹 박물관은 전반적으로 비슷하므로, 그 안에서 차이가 큰 항목이 우리 시설만의 특징입니다. 다른 박물관의 운영 방식을 참고할 때 출발점으로 쓰세요. 차이가 운영 성과의 좋고 나쁨을 뜻하지는 않습니다.">
-      <p className="card-sub">‘차이’가 큰 항목을 보면 비슷한 박물관과 우리 시설이 다른 점을 찾을 수 있습니다.</p>
       <div className="table-scroll"><DataTable head={['항목', '우리 시설', '같은 그룹의 다른 박물관 평균', '차이', '다른 그룹 박물관 평균']} rows={view.diff_vs_group.map((d, i) => [
         d.label, fmtFeature(d.key, d.value), fmtFeature(d.key, d.reference), fmtDiff(d.key, d.diff), fmtFeature(d.key, view.diff_vs_others[i]?.reference ?? null)])}/></div>
     </Card>}
@@ -61,28 +58,22 @@ function GroupResult({ data: res, facility }) {
     <Card title="박물관 묶음 구조" help="나뭇가지 모양 그림(덴드로그램)입니다. 아래쪽에서 일찍 만나는 박물관일수록 서로 비슷합니다. 가로 절단선 아래에서 묶인 박물관들이 같은 그룹이 되며, 오른쪽 위 숫자로 그룹 수를 바꿔 볼 수 있습니다(✓ = 자동 선택된 그룹 수)."
       action={<Segmented label="그룹 수" value={String(k)} onChange={v => setK(Number(v))}
         options={res.evaluation.map(e => [String(e.k), `${e.k}개${e.k === res.selection.k ? ' ✓' : ''}`])}/>}>
-      <p className="card-sub">같은 색은 같은 그룹이고, 가지가 낮은 곳에서 만날수록 서로 비슷한 박물관입니다{facility ? ` · ▶ = ${facility}` : ''}.</p>
       <Dendrogram d={res.dendrogram} labels={labels} cut={res.dendrogram.cut_heights[String(k)]} highlight={facility}/>
       <div className="group-chips">{Object.entries(groupsAtK).map(([g, ids]) => <div key={g} className="group-chip">
         <b><span className="dot" style={{ '--dot': clusterColor(g) }}/>{groupName(g)} · {ids.length}곳{ids.length === 1 && <Badge tone="orange">1곳뿐인 그룹</Badge>}</b>
         <span>{ids.join(', ')}</span>
       </div>)}</div>
-      <ChartTable head={['순서', '박물관', `그룹 (그룹 수 ${k}개)`]} rows={res.dendrogram.leaves.map((id, i) => [i + 1, res.dendrogram.leaf_labels[i], groupName(labels[id])])}/>
+      <ChartTable title="박물관 묶음 구조" head={['순서', '박물관', `그룹 (그룹 수 ${k}개)`]} rows={res.dendrogram.leaves.map((id, i) => [i + 1, res.dendrogram.leaf_labels[i], groupName(labels[id])])}/>
     </Card>
 
     <Card title="그룹별 특징 비교" help="각 그룹에 속한 박물관들의 평균값입니다. 파란색은 전체 평균보다 뚜렷하게 높은 항목, 빨간색은 뚜렷하게 낮은 항목입니다(표준화 평균 ±0.5 이상).">
-      <p className="card-sub">{isSelectedK ? '파란색 = 전체 평균보다 높음, 빨간색 = 전체 평균보다 낮음' : `그룹별 특징은 자동 선택된 그룹 수(${res.selection.k}개)에서만 계산됩니다.`}</p>
+      {!isSelectedK && <p className="card-sub">그룹별 특징은 자동 선택된 그룹 수({res.selection.k}개)에서만 계산됩니다.</p>}
       {isSelectedK ? <div className="table-scroll"><DataTable head={['항목', ...res.groups.map(g => <span key={g.id}><span className="dot" style={{ '--dot': clusterColor(g.id) }}/> {g.name} ({g.size}곳)</span>)]}
         rows={used.map(u => [u.label, ...res.groups.map(g => {
           const z = g.mean_z[u.key]
           return <span key={g.id} className={z > 0.5 ? 'z-high' : z < -0.5 ? 'z-low' : ''}>{fmtFeature(u.key, g.mean_raw[u.key])}</span>
         })])}/></div> : <p className="empty">그룹 수를 {res.selection.k}개로 되돌리면 표가 보입니다.</p>}
     </Card>
-
-    <div className="cluster-caution"><strong>읽을 때 참고하세요</strong><ul>
-      <li>분석한 박물관이 {res.facilities_used.length}곳뿐이므로 그룹은 <b>절대적인 분류가 아니라 참고용</b>입니다.</li>
-      <li>1~2곳으로 이루어진 그룹은 조건에 따라 쉽게 바뀔 수 있습니다.</li>
-    </ul></div>
 
     <details className="cluster-advanced"><summary>분석 상세 보기 <span>분석 품질 지표 · 민감도 분석 · 해석 안내</span></summary><div className="cluster-advanced-body">
       <StatCards items={[

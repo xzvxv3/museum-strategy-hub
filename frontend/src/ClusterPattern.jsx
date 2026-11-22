@@ -37,7 +37,6 @@ function PatternResult({ data: res, facility }) {
   const unitHelp = `분석 구간은 ‘${res.unit_label}’ 단위입니다. 예를 들어 한 시설의 한 주 평일이 하나의 구간입니다.`
 
   return <section className="cluster-page" aria-label="방문 패턴 군집">
-    <div className="cluster-method-note"><details className="cluster-method-details"><summary>분석 방법</summary><p>시설의 방문 기록을 <b>{res.unit_label}</b> 단위로 나누고, 하루 중 어느 시간대에 사람이 많이 감지됐는지(시간대별 비율)가 비슷한 구간끼리 K-means로 묶었습니다. 개인이나 고객 유형을 분류한 것이 아니며, 값은 실제 입장객이 아닌 시설 주변 <b>감지 인구</b>입니다. 기간·연령·성별 필터는 분석 범위를 바꾸고, 시설 필터는 결과에서 선택 시설을 강조하는 데만 쓰입니다.</p></details></div>
 
     <Card title="한눈에 보기" className="cluster-summary" help={`${unitHelp} 구간마다 시간대별 방문 비율을 비교해 비슷한 것끼리 ‘방문 패턴’으로 묶었습니다.`}>
       {facility && myTop ? <>
@@ -59,30 +58,28 @@ function PatternResult({ data: res, facility }) {
       <p>평일 구간 {num(c.day_type.weekday)}개 · 주말 구간 {num(c.day_type.weekend)}개</p>
     </div>)}</div>
 
-    <div className="two-col">
+    <div className="two-col pattern-time-comparison">
       <Card title="패턴별 시간대 방문 비율" help={`각 패턴에서 하루 방문 인구가 시간대별로 어떻게 나뉘는지 보여 줍니다. 시간대 구분: ${bins.map(b => `${b.label} ${b.range}`).join(', ')}. 점선은 모든 구간의 평균입니다.`}>
-        <p className="card-sub">선이 높은 시간대일수록 그 패턴에서 사람이 많이 몰립니다. 점선은 전체 평균입니다.</p>
         <LineChart label="패턴별 시간대 방문 비율" categories={binLabels} format={v => pct(v, 0)} min={0}
           series={[...clusters.map((c, i) => ({ ...named[i], values: bins.map(b => c.mean_shares[b.key]) })),
             { name: '전체 평균', color: '#64748B', dashed: true, values: bins.map(b => res.overall_mean_shares[b.key]) }]}/>
-        <ChartTable head={['시간대', '구간', ...named.map(s => s.name), '전체 평균']}
+        <ChartTable title="패턴별 시간대 방문 비율" head={['시간대', '구간', ...named.map(s => s.name), '전체 평균']}
           rows={bins.map(b => [b.label, b.range, ...clusters.map(c => pct(c.mean_shares[b.key])), pct(res.overall_mean_shares[b.key])])}/>
       </Card>
       <Card title="평균과 비교한 시간대 특징" help="각 패턴의 시간대별 방문 비율에서 전체 평균을 뺀 값입니다(%p, 퍼센트포인트). 0보다 위면 평균보다 그 시간대에 사람이 더 몰리고, 아래면 덜 몰린다는 뜻입니다.">
-        <p className="card-sub">막대가 위로 길수록 평균보다 그 시간대에 사람이 더 몰리는 패턴입니다.</p>
         <GroupedBars label="전체 평균 대비 패턴별 시간대 비율 차이" categories={binLabels} format={v => `${(v * 100).toFixed(0)}%p`}
           series={clusters.map((c, i) => ({ ...named[i], values: bins.map(b => c.diff_vs_overall[b.key]) }))}/>
-        <ChartTable head={['시간대', ...named.map(s => s.name)]} rows={bins.map(b => [b.label, ...clusters.map(c => pp(c.diff_vs_overall[b.key]))])}/>
+        <ChartTable title="평균과 비교한 시간대 특징" head={['시간대', ...named.map(s => s.name)]} rows={bins.map(b => [b.label, ...clusters.map(c => pp(c.diff_vs_overall[b.key]))])}/>
       </Card>
     </div>
 
-    <div className="chart-grid">
-      <Card title={facility ? `${facility}의 방문 패턴 구성` : '우리 시설의 방문 패턴 구성'} help={`선택한 시설의 분석 구간이 각 패턴에 얼마나 속하는지 나타냅니다. ${unitHelp} 옆 카드에서 ‘방문 인구 기준’을 고르면 사람이 많았던 구간에 더 큰 비중을 줍니다.`}>
+    <div className="chart-grid facility-pattern-sections">
+      <Card className="facility-pattern-composition" title={facility ? `${facility}의 방문 패턴 구성` : '우리 시설의 방문 패턴 구성'} help={`선택한 시설의 분석 구간이 각 패턴에 얼마나 속하는지 나타냅니다. ${unitHelp} 옆 비교 카드에서 ‘방문 인구 기준’을 고르면 사람이 많았던 구간에 더 큰 비중을 줍니다.`}>
         <p className="card-sub">{fv ? `분석 구간 ${num(myUnits)}개 · 데이터 부족으로 제외 ${num(fv.excluded.length)}개 · ${weightLabel}` : '상단 필터에서 시설을 선택하세요.'}</p>
         {!facility ? <p className="empty">시설을 선택하면 우리 시설이 어떤 방문 패턴에 속하는지 보여 드립니다.</p>
           : fv && myUnits ? <>
             <Donut center={num(myUnits)} caption="분석 구간" items={clusters.map((c, i) => ({ name: named[i].name, color: named[i].color, value: fv.composition[shareKey][c.id] ?? 0 }))}/>
-            <ChartTable head={['패턴', '구간 수', '비율']} rows={clusters.map((c, i) => [named[i].name, num(fv.composition.counts[c.id]), pct(fv.composition[shareKey][c.id])])}/>
+            <ChartTable title={facility ? `${facility}의 방문 패턴 구성` : '우리 시설의 방문 패턴 구성'} head={['패턴', '구간 수', '비율']} rows={clusters.map((c, i) => [named[i].name, num(fv.composition.counts[c.id]), pct(fv.composition[shareKey][c.id])])}/>
           </> : <p className="empty">이 시설은 분석 범위에 없거나 데이터가 부족해 모든 구간이 제외되었습니다.</p>}
       </Card>
       <Card title="시설별 방문 패턴 비교" help="막대 하나가 한 시설입니다. 색깔별 길이는 그 시설의 분석 구간 중 각 패턴이 차지하는 비율입니다. ‘방문 인구 기준’은 사람이 많았던 구간에 더 큰 비중을 둡니다."
@@ -90,7 +87,7 @@ function PatternResult({ data: res, facility }) {
         <p className="card-sub">같은 색 막대가 길수록 그 패턴이 자주 나타나는 시설입니다{facility ? ` · ▶ = ${facility}` : ''}.</p>
         <StackedRows series={named} rows={res.facility_composition.map(c => ({ key: c.id, label: c.name, highlight: c.id === facility, empty: !c.units,
           values: clusters.map(cl => c[shareKey][cl.id] ?? 0) }))}/>
-        <ChartTable head={['시설', '분석 구간', ...named.map(s => s.name)]}
+        <ChartTable title="시설별 방문 패턴 비교" head={['시설', '분석 구간', ...named.map(s => s.name)]}
           rows={res.facility_composition.map(c => [c.name, num(c.units), ...clusters.map(cl => pct(c[shareKey][cl.id]))])}/>
       </Card>
     </div>
@@ -101,15 +98,10 @@ function PatternResult({ data: res, facility }) {
       {timeline.length ? <>
         <StackedColumns label="기간별 방문 패턴 구성 변화" categories={timeLabels} overlay={overlay}
           series={clusters.map((c, i) => ({ ...named[i], values: timeline.map(t => t.shares[c.id]) }))}/>
-        <ChartTable head={[grain === 'monthly' ? '월' : '주 시작일', ...named.map(s => s.name), ...overlay.map(s => s.name)]}
+        <ChartTable title="기간별 방문 패턴 변화" head={[grain === 'monthly' ? '월' : '주 시작일', ...named.map(s => s.name), ...overlay.map(s => s.name)]}
           rows={timeline.map((t, i) => [grain === 'monthly' ? ymLabel(t.ym) : t.week_start, ...clusters.map(c => pct(t.shares[c.id])), ...overlay.map(s => pct(s.values[i]))])}/>
       </> : <p className="empty">이 분석 단위에는 기간별 변화가 없습니다.</p>}
     </Card>
-
-    <div className="cluster-caution"><strong>읽을 때 참고하세요</strong><ul>
-      <li>숫자는 실제 입장객 수가 아니라 시설 주변에서 <b>감지된 인구</b>입니다.</li>
-      <li>패턴 이름은 전체 평균보다 방문 비중이 높은 시간대를 보고 자동으로 붙인 설명이며, <b>고객 유형을 뜻하지 않습니다</b>.</li>
-    </ul></div>
 
     <details className="cluster-advanced"><summary>분석 상세 보기 <span>분석 품질 지표 · 제외 기준 · 해석 안내</span></summary><div className="cluster-advanced-body">
       <StatCards items={[

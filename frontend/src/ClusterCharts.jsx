@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Card, InfoTip } from './ui'
+import { useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Card, Icon, InfoTip } from './ui'
 import { pct } from './clusterUtils'
 import './Cluster.css'
 
@@ -29,8 +30,23 @@ export function Segmented({ label, value, options, onChange }) {
   return <div className="segmented" role="group" aria-label={label}>{options.map(([id, text]) => <button key={id} className={value === id ? 'selected' : ''} aria-pressed={value === id} onClick={() => onChange(id)}>{text}</button>)}</div>
 }
 
-export function ChartTable({ head, rows }) {
-  return <details className="chart-table"><summary>차트 수치 보기</summary><div className="table-scroll"><DataTable head={head} rows={rows}/></div></details>
+export function ChartTable({ title, head, rows }) {
+  const dialog = useRef(null)
+  const titleId = useId()
+  const pointerStartedOutside = useRef(false)
+  const outside = event => {
+    const bounds = dialog.current.getBoundingClientRect()
+    return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom
+  }
+  return <div className="chart-table">
+    <button type="button" className="chart-table-trigger" aria-haspopup="dialog" aria-label={`${title} 차트 수치 보기`} onClick={() => dialog.current.showModal()}><Icon name="file" size={16}/><span>차트 수치 보기</span><Icon name="arrow" size={14}/></button>
+    {createPortal(<dialog ref={dialog} className="chart-values-dialog" aria-labelledby={titleId}
+      onPointerDown={event => { pointerStartedOutside.current = outside(event) }}
+      onClick={event => { if (pointerStartedOutside.current && outside(event)) dialog.current.close(); pointerStartedOutside.current = false }}>
+      <div className="chart-values-heading"><div><span>차트 수치</span><h2 id={titleId}>{title}</h2></div><button type="button" className="outline" autoFocus onClick={() => dialog.current.close()}>닫기</button></div>
+      <div className="chart-values-scroll" tabIndex={0} role="region" aria-label={`${title} 수치 표`}><DataTable head={head} rows={rows}/></div>
+    </dialog>, document.body)}
+  </div>
 }
 
 export function DataTable({ head, rows }) {
@@ -62,9 +78,14 @@ function frameFor(categories, values, height, bounds = {}) {
   return { ticks, ph, band, y: v => T + ph - (v - lo) / (hi - lo) * ph, cx: i => L + band * (i + 0.5) }
 }
 
-function Frame({ label, height, frame, categories, format, active, setActive, describe, children }) {
+function Frame({ label, height, frame, categories, format, active, setActive, describe, series, children }) {
   const every = Math.max(1, Math.ceil(categories.length / 12))
-  return <><div className="chart-readout"><span>{label}</span><b>{active == null ? '항목에 마우스를 올리면 수치가 보입니다' : describe(active)}</b></div>
+  return <><div className="cluster-readout">
+      <div className="cluster-readout-heading"><strong>{label === '패턴별 시간대 방문 비율' || label === '전체 평균 대비 패턴별 시간대 비율 차이' ? '선택 시간대' : '선택 항목'}: {active == null ? '—' : categories[active]}</strong></div>
+      <div className="cluster-readout-values">{series.map(s => <div className="cluster-readout-value" key={s.name}>
+        <i style={{ background: s.color }} aria-hidden="true"/><span title={s.name}>{s.name}</span><b>{active == null || s.values[active] == null ? '—' : format(s.values[active])}</b>
+      </div>)}</div>
+    </div>
     <svg className="cluster-svg" viewBox={`0 0 ${W} ${height}`} role="img" aria-label={label} onMouseLeave={() => setActive(null)}>
       {frame.ticks.map(t => <g key={t}><line x1={L} x2={W - R} y1={frame.y(t)} y2={frame.y(t)} className={t === 0 ? 'zero' : 'grid'}/><text x={L - 8} y={frame.y(t) + 4} textAnchor="end">{format(t)}</text></g>)}
       {categories.map((c, i) => i % every === 0 && <text key={i} x={frame.cx(i)} y={height - 10} textAnchor="middle">{c}</text>)}
@@ -80,7 +101,7 @@ const describer = (categories, series, format) => i => `${categories[i]} · ${se
 export function LineChart({ label, categories, series, format, height = 250, min, max }) {
   const [active, setActive] = useState(null)
   const frame = frameFor(categories, series.flatMap(s => s.values).filter(v => v != null), height, { min, max })
-  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive }} describe={describer(categories, series, format)}>
+  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive, series }} describe={describer(categories, series, format)}>
     {series.map(s => <g key={s.name}>
       <polyline points={s.values.map((v, i) => v == null ? null : `${frame.cx(i)},${frame.y(v)}`).filter(Boolean).join(' ')} fill="none" stroke={s.color} strokeWidth={s.dashed ? 1.6 : 2.4} strokeDasharray={s.dashed ? '5 4' : undefined} strokeLinejoin="round"/>
       {s.values.map((v, i) => v != null && <circle key={i} cx={frame.cx(i)} cy={frame.y(v)} r={active === i ? 4 : 2.6} fill={s.color}/>)}
@@ -93,7 +114,7 @@ export function GroupedBars({ label, categories, series, format, height = 250 })
   const [active, setActive] = useState(null)
   const frame = frameFor(categories, series.flatMap(s => s.values), height)
   const width = Math.min(18, frame.band * 0.8 / series.length)
-  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive }} describe={describer(categories, series, format)}>
+  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive, series }} describe={describer(categories, series, format)}>
     {series.map((s, j) => s.values.map((v, i) => <rect key={`${j}-${i}`} x={frame.cx(i) - width * series.length / 2 + j * width} y={Math.min(frame.y(v), frame.y(0))} width={width - 1} height={Math.abs(frame.y(v) - frame.y(0))} fill={s.color} opacity={active == null || active === i ? 1 : 0.45} rx="2"/>))}
   </Frame><Legend items={series}/></div>
 }
@@ -104,7 +125,7 @@ export function StackedColumns({ label, categories, series, overlay = [], height
   const frame = frameFor(categories, [0, 1], height, { min: 0, max: 1 })
   const width = Math.max(2, frame.band * 0.72)
   const format = v => pct(v, 0)
-  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive }} describe={describer(categories, [...series, ...overlay], format)}>
+  return <div className="cluster-chart"><Frame {...{ label, height, frame, categories, format, active, setActive }} series={[...series, ...overlay]} describe={describer(categories, [...series, ...overlay], format)}>
     {categories.map((c, i) => {
       const values = series.map(s => s.values[i] || 0)
       const bottoms = prefixSums(values)
