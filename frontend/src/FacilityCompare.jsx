@@ -66,6 +66,5 @@ export default function FacilityCompare({ metadata, filters, onChange }) {
       <label className="ops-field">성별<select value={filters.sex} onChange={e => onChange({ ...filters, sex: e.target.value })}><option value="">전체 성별</option><option value="F">여성</option><option value="M">남성</option></select></label>
     </div></Card>
     <div className="compare-grid">{selected.map((facility, index) => <CompareCard key={index} {...{ facility, facilities, filters, selected, index }} onSelect={value => setSelected(v => v.map((f, i) => i === index ? value : f))}/>)}</div>
-    <p className="ops-note">20·30대 집계이며 고유 방문자 수가 아닙니다. 주말 비중은 합계 기준으로 요일별 일수를 보정하지 않습니다. 관측일 수와 누락 정도가 다른 시설의 단순 우열을 판단하지 마세요. —는 관측 없음 또는 비율 계산 불가입니다.</p>
   </div>
 }
